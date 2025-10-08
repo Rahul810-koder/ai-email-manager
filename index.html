@@ -1,27 +1,21 @@
-<!DOCTYPE html>
+
+      <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Email Manager - Smart Email Assistant</title>
+    <title>AI Email Manager</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
         
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1000px; margin: 0 auto; }
         
         .header {
             text-align: center;
@@ -29,9 +23,447 @@
             margin-bottom: 30px;
         }
         
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
         
-        .header p {
+        .card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 14px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result {
+            display: none;
+            margin-top: 20px;
+        }
+        
+        .priority-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .priority-high {
+            background: #fee;
+            color: #c33;
+        }
+        
+        .priority-medium {
+            background: #fef3cd;
+            color: #856404;
+        }
+        
+        .priority-low {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .response-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            margin-top: 15px;
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        
+        .btn-secondary:hover {
+            background: #f8f9fa;
+        }
+        
+        .knowledge-base {
+            margin-top: 15px;
+        }
+        
+        .kb-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .kb-item strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .add-kb-btn {
+            background: white;
+            color: #667eea;
+            border: 2px dashed #667eea;
+            margin-top: 10px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+        
+        .info-box {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196F3;
+        }
+        
+        .info-box p {
+            color: #0c5460;
+            margin-bottom: 5px;
+        }
+        
+        .tag {
+            display: inline-block;
+            background: #e0e7ff;
+            color: #667eea;
+            padding: 4px 12px;
+            border-radius: 15px;
+            margin: 4px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI Email Manager</h1>
+            <p>Smart email prioritization and auto-response suggestions</p>
+        </div>
+
+        <div class="card">
+            <h2>⚙️ Your Settings</h2>
+            <div class="input-group">
+                <label>Your Interests/Priorities (comma separated)</label>
+                <input type="text" id="interests" placeholder="e.g., Product launches, Customer feedback, Partnership opportunities">
+            </div>
+            
+            <div class="input-group">
+                <label>Your Schedule/Availability</label>
+                <input type="text" id="schedule" placeholder="e.g., Available Mon-Fri 9am-5pm EST, Busy with meetings Wednesdays">
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📧 Analyze Email</h2>
+            <div class="input-group">
+                <label>Email Subject</label>
+                <input type="text" id="emailSubject" placeholder="Enter email subject">
+            </div>
+            
+            <div class="input-group">
+                <label>Email Content</label>
+                <textarea id="emailContent" placeholder="Paste the email content here..."></textarea>
+            </div>
+            
+            <button class="btn" onclick="analyzeEmail()">Analyze Email</button>
+            
+            <div id="result" class="result">
+                <h3>📊 Analysis Result</h3>
+                <div id="priorityBadge"></div>
+                <div id="analysis"></div>
+                <div class="response-box">
+                    <strong>💡 Suggested Response:</strong>
+                    <div id="suggestedResponse"></div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="editResponse()">✏️ Edit Response</button>
+                    <button class="btn" onclick="approveResponse()">✅ Approve & Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🧠 Knowledge Base (Your Answer Library)</h2>
+            <div class="info-box">
+                <p><strong>💡 How it works:</strong> Add common questions and your standard answers. The AI will use these to suggest responses automatically.</p>
+            </div>
+            <div id="knowledgeBase" class="knowledge-base">
+                <div class="kb-item">
+                    <strong>Q: What are your working hours?</strong>
+                    <p>I'm available Monday through Friday, 9 AM to 5 PM EST. For urgent matters outside these hours, please mark your email as "urgent".</p>
+                </div>
+                <div class="kb-item">
+                    <strong>Q: Do you offer refunds?</strong>
+                    <p>Yes, we offer a 30-day money-back guarantee on all our products. Simply reply to this email with your order number to initiate a refund.</p>
+                </div>
+            </div>
+            <button class="btn add-kb-btn" onclick="addKnowledgeBase()">+ Add New Q&A</button>
+        </div>
+    </div>
+
+    <script>
+        // Store knowledge base in memory
+        let knowledgeBase = [
+            {
+                question: "What are your working hours?",
+                answer: "I'm available Monday through Friday, 9 AM to 5 PM EST. For urgent matters outside these hours, please mark your email as 'urgent'."
+            },
+            {
+                question: "Do you offer refunds?",
+                answer: "Yes, we offer a 30-day money-back guarantee on all our products. Simply reply to this email with your order number to initiate a refund."
+            }
+        ];
+
+        function analyzeEmail() {
+            const interests = document.getElementById('interests').value;
+            const schedule = document.getElementById('schedule').value;
+            const subject = document.getElementById('emailSubject').value;
+            const content = document.getElementById('emailContent').value;
+
+            if (!subject || !content) {
+                alert('Please enter both email subject and content');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('result').innerHTML = '<div class="loading">🤖 AI is analyzing your email...</div>';
+
+            // Simulate AI analysis (in real version, this calls AI API)
+            setTimeout(() => {
+                const analysis = performAnalysis(subject, content, interests, schedule);
+                displayResults(analysis);
+            }, 1500);
+        }
+
+        function performAnalysis(subject, content, interests, schedule) {
+            // Priority calculation based on keywords
+            let priorityScore = 0;
+            const highPriorityWords = ['urgent', 'asap', 'important', 'deadline', 'meeting', 'opportunity'];
+            const contentLower = (subject + ' ' + content).toLowerCase();
+            
+            highPriorityWords.forEach(word => {
+                if (contentLower.includes(word)) priorityScore += 2;
+            });
+
+            // Check if matches interests
+            if (interests) {
+                const interestList = interests.toLowerCase().split(',');
+                interestList.forEach(interest => {
+                    if (contentLower.includes(interest.trim())) priorityScore += 3;
+                });
+            }
+
+            // Determine priority level
+            let priority = 'low';
+            if (priorityScore >= 5) priority = 'high';
+            else if (priorityScore >= 2) priority = 'medium';
+
+            // Check knowledge base for similar questions
+            let suggestedResponse = generateResponse(content, subject);
+
+            return {
+                priority: priority,
+                score: priorityScore,
+                reasoning: generateReasoning(priority, priorityScore, interests),
+                suggestedResponse: suggestedResponse
+            };
+        }
+
+        function generateReasoning(priority, score, interests) {
+            let reasons = [];
+            
+            if (priority === 'high') {
+                reasons.push('Contains high-priority keywords');
+                if (interests) reasons.push('Matches your stated interests');
+                reasons.push('Requires prompt attention');
+            } else if (priority === 'medium') {
+                reasons.push('Some relevant keywords detected');
+                reasons.push('Should be reviewed within 24 hours');
+            } else {
+                reasons.push('No urgent indicators found');
+                reasons.push('Can be reviewed when convenient');
+            }
+            
+            return reasons.join(' • ');
+        }
+
+        function generateResponse(content, subject) {
+            const contentLower = content.toLowerCase();
+            
+            // Check knowledge base for matching questions
+            for (let kb of knowledgeBase) {
+                const questionWords = kb.question.toLowerCase().split(' ');
+                let matchCount = 0;
+                
+                questionWords.forEach(word => {
+                    if (word.length > 3 && contentLower.includes(word)) {
+                        matchCount++;
+                    }
+                });
+                
+                // If more than 40% of keywords match, use this response
+                if (matchCount / questionWords.length > 0.4) {
+                    return kb.answer;
+                }
+            }
+            
+            // Default response template
+            return `Thank you for reaching out regarding "${subject}". I've received your email and will review it carefully. Based on my current schedule and priorities, I'll get back to you with a detailed response soon.\n\nBest regards`;
+        }
+
+        function displayResults(analysis) {
+            const priorityClass = `priority-${analysis.priority}`;
+            const priorityText = analysis.priority.toUpperCase();
+            
+            document.getElementById('result').innerHTML = `
+                <h3>📊 Analysis Result</h3>
+                <div class="priority-badge ${priorityClass}">
+                    Priority: ${priorityText} (Score: ${analysis.score})
+                </div>
+                <p><strong>Reasoning:</strong> ${analysis.reasoning}</p>
+                <div class="response-box">
+                    <strong>💡 Suggested Response:</strong>
+                    <div id="suggestedResponse" style="margin-top: 10px; white-space: pre-wrap;">${analysis.suggestedResponse}</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="editResponse()">✏️ Edit Response</button>
+                    <button class="btn" onclick="approveResponse()">✅ Approve & Copy</button>
+                </div>
+            `;
+            
+            document.getElementById('result').style.display = 'block';
+        }
+
+        function editResponse() {
+            const responseDiv = document.getElementById('suggestedResponse');
+            const currentText = responseDiv.textContent;
+            
+            responseDiv.innerHTML = `<textarea style="width: 100%; min-height: 120px; padding: 10px; border: 2px solid #667eea; border-radius: 8px;">${currentText}</textarea>
+            <button class="btn" style="margin-top: 10px;" onclick="saveEdit()">💾 Save Changes</button>`;
+        }
+
+        function saveEdit() {
+            const textarea = document.querySelector('#suggestedResponse textarea');
+            const newText = textarea.value;
+            document.getElementById('suggestedResponse').innerHTML = newText;
+            alert('✅ Response updated!');
+        }
+
+        function approveResponse() {
+            const response = document.getElementById('suggestedResponse').textContent;
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(response).then(() => {
+                alert('✅ Response copied to clipboard! You can now paste it into your email.');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = response;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('✅ Response copied to clipboard!');
+            });
+        }
+
+        function addKnowledgeBase() {
+            const question = prompt('Enter the common question:');
+            if (!question) return;
+            
+            const answer = prompt('Enter your standard answer:');
+            if (!answer) return;
+            
+            knowledgeBase.push({ question, answer });
+            
+            const kbDiv = document.getElementById('knowledgeBase');
+            const newItem = document.createElement('div');
+            newItem.className = 'kb-item';
+            newItem.innerHTML = `
+                <strong>Q: ${question}</strong>
+                <p>${answer}</p>
+            `;
+            kbDiv.appendChild(newItem);
+            
+            alert('✅ Knowledge base updated!');
+        }
+
+        // Load example data on page load
+        window.onload = function() {
+            document.getElementById('interests').value = 'Product launches, Customer feedback, Partnership opportunities';
+            document.getElementById('schedule').value = 'Available Mon-Fri 9am-5pm EST';
+        }
+    </script>
+</body>
+</html>
