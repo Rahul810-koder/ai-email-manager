@@ -1,5 +1,4 @@
-
-      <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -106,21 +105,25 @@
             border-radius: 20px;
             font-weight: 600;
             margin-bottom: 15px;
+            font-size: 16px;
         }
         
         .priority-high {
             background: #fee;
             color: #c33;
+            border: 2px solid #c33;
         }
         
         .priority-medium {
             background: #fef3cd;
             color: #856404;
+            border: 2px solid #856404;
         }
         
         .priority-low {
             background: #d4edda;
             color: #155724;
+            border: 2px solid #155724;
         }
         
         .response-box {
@@ -201,6 +204,23 @@
             margin: 4px;
             font-size: 13px;
         }
+        
+        .score-details {
+            background: #f0f4ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+        }
+        
+        .score-item {
+            padding: 5px 0;
+            color: #555;
+        }
+        
+        .score-item strong {
+            color: #667eea;
+        }
     </style>
 </head>
 <body>
@@ -240,6 +260,7 @@
             <div id="result" class="result">
                 <h3>📊 Analysis Result</h3>
                 <div id="priorityBadge"></div>
+                <div id="scoreDetails" class="score-details"></div>
                 <div id="analysis"></div>
                 <div class="response-box">
                     <strong>💡 Suggested Response:</strong>
@@ -272,7 +293,6 @@
     </div>
 
     <script>
-        // Store knowledge base in memory
         let knowledgeBase = [
             {
                 question: "What are your working hours?",
@@ -295,11 +315,9 @@
                 return;
             }
 
-            // Show loading
             document.getElementById('result').style.display = 'block';
             document.getElementById('result').innerHTML = '<div class="loading">🤖 AI is analyzing your email...</div>';
 
-            // Simulate AI analysis (in real version, this calls AI API)
             setTimeout(() => {
                 const analysis = performAnalysis(subject, content, interests, schedule);
                 displayResults(analysis);
@@ -307,78 +325,165 @@
         }
 
         function performAnalysis(subject, content, interests, schedule) {
-            // Priority calculation based on keywords
-            let priorityScore = 0;
-            const highPriorityWords = ['urgent', 'asap', 'important', 'deadline', 'meeting', 'opportunity'];
-            const contentLower = (subject + ' ' + content).toLowerCase();
-            
-            highPriorityWords.forEach(word => {
-                if (contentLower.includes(word)) priorityScore += 2;
+            const fullText = (subject + ' ' + content).toLowerCase();
+            let score = 0;
+            let scoreBreakdown = [];
+
+            // CRITICAL/URGENT KEYWORDS (High Priority) - 4 points each
+            const criticalWords = ['urgent', 'asap', 'critical', 'emergency', 'immediate', 'deadline today', 'time-sensitive', 'expires', 'last chance'];
+            criticalWords.forEach(word => {
+                if (fullText.includes(word)) {
+                    score += 4;
+                    scoreBreakdown.push(`+4: Critical keyword "${word}" detected`);
+                }
             });
 
-            // Check if matches interests
+            // IMPORTANT KEYWORDS - 3 points each
+            const importantWords = ['important', 'priority', 'deadline', 'due', 'required', 'must', 'action needed', 'response needed'];
+            importantWords.forEach(word => {
+                if (fullText.includes(word)) {
+                    score += 3;
+                    scoreBreakdown.push(`+3: Important keyword "${word}" found`);
+                }
+            });
+
+            // BUSINESS OPPORTUNITY KEYWORDS - 3 points each
+            const opportunityWords = ['partnership', 'investment', 'investor', 'funding', 'revenue', 'opportunity', 'collaboration', 'deal', 'contract'];
+            opportunityWords.forEach(word => {
+                if (fullText.includes(word)) {
+                    score += 3;
+                    scoreBreakdown.push(`+3: Business opportunity keyword "${word}"`);
+                }
+            });
+
+            // CUSTOMER/CLIENT KEYWORDS - 3 points each
+            const customerWords = ['customer', 'client', 'feedback', 'complaint', 'issue', 'problem', 'bug', 'not working', 'error'];
+            customerWords.forEach(word => {
+                if (fullText.includes(word)) {
+                    score += 3;
+                    scoreBreakdown.push(`+3: Customer-related keyword "${word}"`);
+                }
+            });
+
+            // MEDIA/PRESS KEYWORDS - 3 points each
+            const mediaWords = ['interview', 'press', 'media', 'article', 'feature', 'journalist', 'reporter', 'publication'];
+            mediaWords.forEach(word => {
+                if (fullText.includes(word)) {
+                    score += 3;
+                    scoreBreakdown.push(`+3: Media opportunity "${word}"`);
+                }
+            });
+
+            // SECURITY KEYWORDS - 5 points (highest priority)
+            const securityWords = ['security', 'breach', 'hacked', 'suspicious activity', 'unauthorized', 'alert', 'password'];
+            securityWords.forEach(word => {
+                if (fullText.includes(word)) {
+                    score += 5;
+                    scoreBreakdown.push(`+5: SECURITY ALERT "${word}"`);
+                }
+            });
+
+            // MEETING/CALL KEYWORDS - 2 points
+            const meetingWords = ['meeting', 'call', 'zoom', 'conference', 'schedule', 'available'];
+            meetingWords.forEach(word => {
+                if (fullText.includes(word)) {
+                    score += 2;
+                    scoreBreakdown.push(`+2: Meeting/call related "${word}"`);
+                }
+            });
+
+            // Check interests match - 4 points per match
             if (interests) {
                 const interestList = interests.toLowerCase().split(',');
                 interestList.forEach(interest => {
-                    if (contentLower.includes(interest.trim())) priorityScore += 3;
+                    if (fullText.includes(interest.trim())) {
+                        score += 4;
+                        scoreBreakdown.push(`+4: Matches your interest "${interest.trim()}"`);
+                    }
                 });
             }
 
-            // Determine priority level
-            let priority = 'low';
-            if (priorityScore >= 5) priority = 'high';
-            else if (priorityScore >= 2) priority = 'medium';
+            // Check for time indicators
+            const timeWords = ['today', 'tomorrow', 'this week', 'end of week', 'by friday', 'by monday'];
+            timeWords.forEach(word => {
+                if (fullText.includes(word)) {
+                    score += 2;
+                    scoreBreakdown.push(`+2: Time-sensitive indicator "${word}"`);
+                }
+            });
 
-            // Check knowledge base for similar questions
-            let suggestedResponse = generateResponse(content, subject);
+            // Determine priority - IMPROVED THRESHOLDS
+            let priority = 'low';
+            if (score >= 8) priority = 'high';      // Lowered from 5 to 8 for more accuracy
+            else if (score >= 4) priority = 'medium'; // Lowered from 2 to 4
+
+            let suggestedResponse = generateResponse(content, subject, fullText);
 
             return {
                 priority: priority,
-                score: priorityScore,
-                reasoning: generateReasoning(priority, priorityScore, interests),
+                score: score,
+                scoreBreakdown: scoreBreakdown,
+                reasoning: generateReasoning(priority, score, interests, scoreBreakdown),
                 suggestedResponse: suggestedResponse
             };
         }
 
-        function generateReasoning(priority, score, interests) {
+        function generateReasoning(priority, score, interests, breakdown) {
             let reasons = [];
             
             if (priority === 'high') {
-                reasons.push('Contains high-priority keywords');
-                if (interests) reasons.push('Matches your stated interests');
-                reasons.push('Requires prompt attention');
+                reasons.push('🔴 HIGH PRIORITY - Requires immediate attention');
+                reasons.push(`Score: ${score} points (8+ = High Priority)`);
             } else if (priority === 'medium') {
-                reasons.push('Some relevant keywords detected');
-                reasons.push('Should be reviewed within 24 hours');
+                reasons.push('🟡 MEDIUM PRIORITY - Review within 24 hours');
+                reasons.push(`Score: ${score} points (4-7 = Medium Priority)`);
             } else {
-                reasons.push('No urgent indicators found');
-                reasons.push('Can be reviewed when convenient');
+                reasons.push('🟢 LOW PRIORITY - Can be reviewed when convenient');
+                reasons.push(`Score: ${score} points (0-3 = Low Priority)`);
             }
             
             return reasons.join(' • ');
         }
 
-        function generateResponse(content, subject) {
-            const contentLower = content.toLowerCase();
-            
+        function generateResponse(content, subject, fullText) {
             // Check knowledge base for matching questions
             for (let kb of knowledgeBase) {
                 const questionWords = kb.question.toLowerCase().split(' ');
                 let matchCount = 0;
                 
                 questionWords.forEach(word => {
-                    if (word.length > 3 && contentLower.includes(word)) {
+                    if (word.length > 3 && fullText.includes(word)) {
                         matchCount++;
                     }
                 });
                 
-                // If more than 40% of keywords match, use this response
                 if (matchCount / questionWords.length > 0.4) {
                     return kb.answer;
                 }
             }
             
-            // Default response template
+            // Generate contextual response based on email type
+            if (fullText.includes('partnership') || fullText.includes('collaboration')) {
+                return `Thank you for reaching out regarding "${subject}". I'm very interested in exploring partnership opportunities. I'd be happy to schedule a call to discuss this further. Could you please share some available times that work for you?\n\nLooking forward to connecting!\n\nBest regards`;
+            }
+            
+            if (fullText.includes('investment') || fullText.includes('investor') || fullText.includes('funding')) {
+                return `Thank you for your interest in our product! I'd be delighted to discuss potential investment opportunities. I can provide you with our pitch deck, current metrics, and roadmap. \n\nWould you be available for a call this week? Please let me know what times work best for you.\n\nBest regards`;
+            }
+            
+            if (fullText.includes('interview') || fullText.includes('press') || fullText.includes('media')) {
+                return `Thank you for considering us for your feature! I'd be honored to participate in the interview. I'm available this week and can accommodate your schedule.\n\nPlease send over the questions or topics you'd like to cover, and we can coordinate a time.\n\nBest regards`;
+            }
+            
+            if (fullText.includes('customer') || fullText.includes('issue') || fullText.includes('problem') || fullText.includes('bug')) {
+                return `Thank you for bringing this to my attention. I sincerely apologize for the inconvenience you're experiencing. \n\nI'm looking into this issue right away and will have a solution for you within 24 hours. Your feedback helps us improve our service.\n\nI'll follow up shortly with an update.\n\nBest regards`;
+            }
+            
+            if (fullText.includes('security') || fullText.includes('suspicious') || fullText.includes('breach')) {
+                return `URGENT: Thank you for the security alert. I'm taking immediate action to secure the account:\n\n1. Changing password now\n2. Enabling two-factor authentication\n3. Reviewing recent activity\n\nI'll respond with confirmation once all security measures are in place.\n\nThank you for the prompt notification.`;
+            }
+            
+            // Default response
             return `Thank you for reaching out regarding "${subject}". I've received your email and will review it carefully. Based on my current schedule and priorities, I'll get back to you with a detailed response soon.\n\nBest regards`;
         }
 
@@ -386,12 +491,23 @@
             const priorityClass = `priority-${analysis.priority}`;
             const priorityText = analysis.priority.toUpperCase();
             
+            let scoreDetailsHTML = '<strong>📈 Score Breakdown:</strong><br>';
+            if (analysis.scoreBreakdown.length > 0) {
+                analysis.scoreBreakdown.forEach(item => {
+                    scoreDetailsHTML += `<div class="score-item">${item}</div>`;
+                });
+            } else {
+                scoreDetailsHTML += '<div class="score-item">No priority indicators found</div>';
+            }
+            scoreDetailsHTML += `<div class="score-item"><strong>Total Score: ${analysis.score} points</strong></div>`;
+            
             document.getElementById('result').innerHTML = `
                 <h3>📊 Analysis Result</h3>
                 <div class="priority-badge ${priorityClass}">
-                    Priority: ${priorityText} (Score: ${analysis.score})
+                    ${priorityText} PRIORITY (Score: ${analysis.score})
                 </div>
-                <p><strong>Reasoning:</strong> ${analysis.reasoning}</p>
+                <div id="scoreDetails" class="score-details">${scoreDetailsHTML}</div>
+                <p><strong>Assessment:</strong> ${analysis.reasoning}</p>
                 <div class="response-box">
                     <strong>💡 Suggested Response:</strong>
                     <div id="suggestedResponse" style="margin-top: 10px; white-space: pre-wrap;">${analysis.suggestedResponse}</div>
@@ -423,11 +539,9 @@
         function approveResponse() {
             const response = document.getElementById('suggestedResponse').textContent;
             
-            // Copy to clipboard
             navigator.clipboard.writeText(response).then(() => {
                 alert('✅ Response copied to clipboard! You can now paste it into your email.');
             }).catch(() => {
-                // Fallback for older browsers
                 const textArea = document.createElement('textarea');
                 textArea.value = response;
                 document.body.appendChild(textArea);
@@ -459,7 +573,6 @@
             alert('✅ Knowledge base updated!');
         }
 
-        // Load example data on page load
         window.onload = function() {
             document.getElementById('interests').value = 'Product launches, Customer feedback, Partnership opportunities';
             document.getElementById('schedule').value = 'Available Mon-Fri 9am-5pm EST';
