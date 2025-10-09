@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,23 +12,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .logo{background:linear-gradient(135deg,#667eea,#764ba2);padding:.5rem;border-radius:.5rem;width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:20px}
 h1{font-size:1.5rem;color:#111}
 .subtitle{font-size:.75rem;color:#666}
-.tabs{display:flex;gap:.5rem}
+.tabs{display:flex;gap:.5rem;flex-wrap:wrap}
 .tab{padding:.5rem 1rem;border:none;border-radius:.5rem;cursor:pointer;font-size:.875rem;font-weight:500;transition:.2s}
 .tab.active{background:#667eea;color:#fff}
 .tab:not(.active){background:#f3f4f6;color:#374151}
+.tab:hover:not(.active){background:#e5e7eb}
 .container{max-width:1200px;margin:0 auto;padding:1rem}
 .grid{display:grid;grid-template-columns:1fr;gap:1rem}
 @media(min-width:1024px){.grid{grid-template-columns:350px 1fr}}
 .card{background:#fff;border-radius:1rem;box-shadow:0 4px 12px rgba(0,0,0,.15);overflow:hidden}
-.card-header{padding:1rem;border-bottom:1px solid #e5e7eb;background:#f9fafb}
+.card-header{padding:1rem;border-bottom:1px solid #e5e7eb;background:#f9fafb;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
 .card-header h2{font-size:1rem;font-weight:600;margin-bottom:.25rem}
 .card-header p{font-size:.75rem;color:#666}
+.btn-add-email{background:#16a34a;color:#fff;padding:.4rem .8rem;border:none;border-radius:.5rem;cursor:pointer;font-size:.75rem;font-weight:600;transition:.2s}
+.btn-add-email:hover{background:#15803d}
 .email-list{max-height:600px;overflow-y:auto}
 .email{padding:1rem;border-bottom:1px solid #f3f4f6;cursor:pointer;transition:.2s}
 .email:hover{background:#f9fafb}
 .email.selected{background:#eff6ff;border-left:4px solid #667eea}
 .email.unread{background:rgba(239,246,255,.3)}
 .email-from{font-size:.875rem;font-weight:600;margin-bottom:.25rem;display:flex;align-items:center;gap:.5rem}
+.mood-emoji{font-size:1.25rem}
 .unread-dot{width:.5rem;height:.5rem;background:#667eea;border-radius:50%;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 .email-subject{font-weight:500;font-size:.875rem;margin-bottom:.5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -50,6 +53,7 @@ h1{font-size:1.5rem;color:#111}
 .detail-title{font-size:1.25rem;font-weight:bold;margin-bottom:.5rem}
 .detail-meta{font-size:.875rem;color:#666;margin-bottom:.25rem}
 .detail-badges{display:flex;gap:.5rem;margin:1rem 0;flex-wrap:wrap}
+.mood-indicator{display:inline-flex;align-items:center;gap:.5rem;background:#f3f4f6;padding:.5rem 1rem;border-radius:.5rem;font-size:.875rem;font-weight:500}
 .section{margin:1.5rem 0}
 .section-title{font-size:.875rem;font-weight:600;margin-bottom:.5rem}
 .body{color:#111;line-height:1.6}
@@ -79,6 +83,13 @@ h1{font-size:1.5rem;color:#111}
 .btn-delete{color:#dc2626;background:none;border:none;cursor:pointer;font-size:1.25rem}
 .qa-answer{background:#f9fafb;padding:.75rem;border-radius:.5rem;font-size:.875rem;line-height:1.5}
 .hidden{display:none}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
+.modal.active{display:flex}
+.modal-content{background:#fff;border-radius:1rem;padding:2rem;max-width:500px;width:90%;max-height:90vh;overflow-y:auto}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
+.modal-title{font-size:1.25rem;font-weight:bold}
+.btn-close{background:none;border:none;font-size:1.5rem;cursor:pointer;color:#999}
+.btn-close:hover{color:#333}
 </style>
 </head>
 <body>
@@ -102,8 +113,11 @@ h1{font-size:1.5rem;color:#111}
 <div class="grid" id="inboxView">
 <div class="card">
 <div class="card-header">
+<div>
 <h2>Emails (<span id="emailCount">0</span>)</h2>
 <p>Sorted by priority</p>
+</div>
+<button class="btn-add-email" onclick="openAddModal()">➕ Add Email</button>
 </div>
 <div class="email-list" id="emailList"></div>
 </div>
@@ -137,25 +151,96 @@ h1{font-size:1.5rem;color:#111}
 </div>
 </div>
 
+<!-- Add Email Modal -->
+<div class="modal" id="addModal">
+<div class="modal-content">
+<div class="modal-header">
+<div class="modal-title">➕ Add New Email</div>
+<button class="btn-close" onclick="closeAddModal()">✕</button>
+</div>
+<div class="form-group">
+<label>From (Email Address)</label>
+<input type="email" id="emailFrom" placeholder="sender@example.com">
+</div>
+<div class="form-group">
+<label>Subject</label>
+<input type="text" id="emailSubject" placeholder="Email subject">
+</div>
+<div class="form-group">
+<label>Email Body</label>
+<textarea id="emailBody" rows="6" placeholder="Paste the email content here..."></textarea>
+</div>
+<button class="btn" onclick="addEmail()" style="width:100%">✅ Add Email</button>
+</div>
+</div>
+
 <script>
 let qa=[
 {id:1,q:"What are your business hours?",a:"I'm available Monday through Friday, 9 AM to 5 PM EST. For urgent matters outside these hours, please mark your email as 'urgent'."},
 {id:2,q:"Do you offer refunds?",a:"Yes, we offer a 30-day money-back guarantee on all our products."}
 ];
 let emails=[
-{id:1,from:"john.smith@company.com",subject:"Urgent: Project Deadline Extension",preview:"Hi, I hope this message finds you well...",body:"Hi, I hope this message finds you well. I'm writing to request a deadline extension for the Q4 project due to unforeseen circumstances. Would it be possible to extend by one week?",time:"2h ago",priority:9,cat:"urgent",read:false},
-{id:2,from:"sarah.johnson@email.com",subject:"Question about refund policy",preview:"Hello, I purchased your product...",body:"Hello, I purchased your product last week and I'm not completely satisfied. Could you explain your refund policy?",time:"5h ago",priority:7,cat:"customer",read:false},
-{id:3,from:"mike.wilson@tech.com",subject:"Meeting Confirmation - Tuesday",preview:"Just wanted to confirm...",body:"Just wanted to confirm our meeting scheduled for next Tuesday at 2 PM. Please let me know if this works.",time:"1d ago",priority:6,cat:"meeting",read:true},
-{id:4,from:"newsletter@updates.com",subject:"Weekly News Digest",preview:"Check out this week's stories...",body:"Check out this week's top stories in technology and business.",time:"2d ago",priority:3,cat:"newsletter",read:true},
-{id:5,from:"alex.brown@startup.io",subject:"What are your working hours?",preview:"Hi, I'm trying to schedule...",body:"Hi there, I'm trying to schedule a call with you. Could you let me know what your availability is like?",time:"3h ago",priority:5,cat:"inquiry",read:false}
+{id:1,from:"john.smith@company.com",subject:"Urgent: Project Deadline Extension",preview:"Hi, I hope this message finds you well...",body:"Hi, I hope this message finds you well. I'm writing to request a deadline extension for the Q4 project due to unforeseen circumstances. Would it be possible to extend by one week?",time:"2h ago",priority:9,cat:"urgent",read:false,mood:"😰"},
+{id:2,from:"sarah.johnson@email.com",subject:"Question about refund policy",preview:"Hello, I purchased your product...",body:"Hello, I purchased your product last week and I'm not completely satisfied. Could you explain your refund policy?",time:"5h ago",priority:7,cat:"customer",read:false,mood:"😐"},
+{id:3,from:"mike.wilson@tech.com",subject:"Meeting Confirmation - Tuesday",preview:"Just wanted to confirm...",body:"Just wanted to confirm our meeting scheduled for next Tuesday at 2 PM. Please let me know if this works.",time:"1d ago",priority:6,cat:"meeting",read:true,mood:"😊"},
+{id:4,from:"newsletter@updates.com",subject:"Weekly News Digest",preview:"Check out this week's stories...",body:"Check out this week's top stories in technology and business.",time:"2d ago",priority:3,cat:"newsletter",read:true,mood:"😎"},
+{id:5,from:"alex.brown@startup.io",subject:"What are your working hours?",preview:"Hi, I'm trying to schedule...",body:"Hi there, I'm trying to schedule a call with you. Could you let me know what your availability is like?",time:"3h ago",priority:5,cat:"inquiry",read:false,mood:"😊"}
 ];
 let sel=null;
+let nextId=6;
+
+function detectMood(body){
+let l=body.toLowerCase();
+if(l.includes('urgent')||l.includes('asap')||l.includes('deadline')||l.includes('immediately'))return'😰';
+if(l.includes('angry')||l.includes('disappointed')||l.includes('unacceptable')||l.includes('complaint'))return'😠';
+if(l.includes('thank')||l.includes('appreciate')||l.includes('great')||l.includes('excellent'))return'😊';
+if(l.includes('?'))return'🤔';
+return'😐'
+}
+
+function analyzePriority(subject,body){
+let s=0,l=(subject+' '+body).toLowerCase();
+['urgent','asap','critical','emergency','immediately','deadline today'].forEach(w=>{if(l.includes(w))s+=4});
+['important','priority','deadline','required','must','action needed'].forEach(w=>{if(l.includes(w))s+=3});
+['partnership','investment','opportunity','deal','contract'].forEach(w=>{if(l.includes(w))s+=3});
+['customer','client','feedback','complaint','issue','problem','bug'].forEach(w=>{if(l.includes(w))s+=3});
+['?'].forEach(w=>{if(l.includes(w))s+=1});
+return Math.min(s,10)
+}
+
+function detectCategory(subject,body){
+let l=(subject+' '+body).toLowerCase();
+if(l.includes('urgent')||l.includes('asap')||l.includes('critical'))return'urgent';
+if(l.includes('customer')||l.includes('client')||l.includes('refund'))return'customer';
+if(l.includes('meeting')||l.includes('call')||l.includes('schedule'))return'meeting';
+if(l.includes('newsletter')||l.includes('digest')||l.includes('update'))return'newsletter';
+return'inquiry'
+}
+
+function openAddModal(){document.getElementById('addModal').classList.add('active')}
+function closeAddModal(){document.getElementById('addModal').classList.remove('active');document.getElementById('emailFrom').value='';document.getElementById('emailSubject').value='';document.getElementById('emailBody').value=''}
+
+function addEmail(){
+let from=document.getElementById('emailFrom').value.trim();
+let subject=document.getElementById('emailSubject').value.trim();
+let body=document.getElementById('emailBody').value.trim();
+if(!from||!subject||!body){alert('Please fill all fields');return}
+let priority=analyzePriority(subject,body);
+let cat=detectCategory(subject,body);
+let mood=detectMood(body);
+let preview=body.substring(0,60)+'...';
+emails.push({id:nextId++,from,subject,preview,body,time:'Just now',priority,cat,read:false,mood});
+closeAddModal();
+re();
+alert('✅ Email added! Priority: '+priority+'/10')
+}
+
 function pc(p){return p>=8?'priority-high':p>=6?'priority-medium':'priority-low'}
 function cc(c){return'cat-'+c}
 function gr(b){let l=b.toLowerCase();for(let q of qa){let k=q.q.toLowerCase().split(' ').filter(w=>w.length>3);if(k.some(kw=>l.includes(kw)))return q.a}return"No suggested response. Add Q&A pairs in Settings."}
 function switchTab(t){let iv=document.getElementById('inboxView'),sv=document.getElementById('settingsView'),ib=document.getElementById('inboxBtn'),sb=document.getElementById('settingsBtn');if(t==='inbox'){iv.classList.remove('hidden');sv.classList.remove('active');ib.classList.add('active');sb.classList.remove('active')}else{iv.classList.add('hidden');sv.classList.add('active');sb.classList.add('active');ib.classList.remove('active')}}
-function re(){document.getElementById('emailList').innerHTML=emails.sort((a,b)=>b.priority-a.priority).map(e=>`<div class="email ${!e.read?'unread':''} ${sel?.id===e.id?'selected':''}" onclick="se(${e.id})"><div class="email-from">${!e.read?'<div class="unread-dot"></div>':''}${e.from}</div><div class="email-subject">${e.subject}</div><div class="email-preview">${e.preview}</div><div class="email-meta"><span class="badge ${cc(e.cat)}">${e.cat}</span><span class="badge ${pc(e.priority)}">${e.priority}</span><span class="time">🕐 ${e.time}</span></div></div>`).join('');document.getElementById('emailCount').textContent=emails.length}
-function se(id){let e=emails.find(x=>x.id===id);if(!e)return;e.read=true;sel=e;re();let r=gr(e.body);document.getElementById('emailDetail').innerHTML=`<div class="detail"><div class="detail-title">${e.subject}</div><div class="detail-meta">From: ${e.from}</div><div class="detail-meta">🕐 ${e.time}</div><div class="detail-badges"><span class="badge ${cc(e.cat)}">${e.cat}</span><span class="badge ${pc(e.priority)}">Priority: ${e.priority}/10</span></div><div class="section"><div class="section-title">📧 Email Content</div><div class="body">${e.body}</div></div><div class="response-box"><div class="response-title">⚡ AI Suggested Response</div><div class="response-text">${r}</div><button class="btn" onclick="cr()">📋 Copy Response</button></div></div>`}
+function re(){document.getElementById('emailList').innerHTML=emails.sort((a,b)=>b.priority-a.priority).map(e=>`<div class="email ${!e.read?'unread':''} ${sel?.id===e.id?'selected':''}" onclick="se(${e.id})"><div class="email-from"><span class="mood-emoji">${e.mood}</span>${!e.read?'<div class="unread-dot"></div>':''}${e.from}</div><div class="email-subject">${e.subject}</div><div class="email-preview">${e.preview}</div><div class="email-meta"><span class="badge ${cc(e.cat)}">${e.cat}</span><span class="badge ${pc(e.priority)}">${e.priority}</span><span class="time">🕐 ${e.time}</span></div></div>`).join('');document.getElementById('emailCount').textContent=emails.length}
+function se(id){let e=emails.find(x=>x.id===id);if(!e)return;e.read=true;sel=e;re();let r=gr(e.body);let moodText={'😊':'Happy/Positive','😠':'Angry/Upset','😰':'Stressed/Urgent','😐':'Neutral','🤔':'Questioning','😎':'Casual'}[e.mood]||'Neutral';document.getElementById('emailDetail').innerHTML=`<div class="detail"><div class="detail-title">${e.subject}</div><div class="detail-meta">From: ${e.from}</div><div class="detail-meta">🕐 ${e.time}</div><div class="detail-badges"><span class="badge ${cc(e.cat)}">${e.cat}</span><span class="badge ${pc(e.priority)}">Priority: ${e.priority}/10</span><div class="mood-indicator"><span style="font-size:1.5rem">${e.mood}</span><span>Mood: ${moodText}</span></div></div><div class="section"><div class="section-title">📧 Email Content</div><div class="body">${e.body}</div></div><div class="response-box"><div class="response-title">⚡ AI Suggested Response</div><div class="response-text">${r}</div><button class="btn" onclick="cr()">📋 Copy Response</button></div></div>`}
 function cr(){navigator.clipboard.writeText(gr(sel.body));alert('✅ Response copied!')}
 function rq(){document.getElementById('qaList').innerHTML=qa.map(q=>`<div class="qa"><div class="qa-header"><div class="qa-question">${q.q}</div><button class="btn-delete" onclick="dq(${q.id})">✕</button></div><div class="qa-answer">${q.a}</div></div>`).join('');document.getElementById('qaCount').textContent=qa.length}
 function addQA(){let q=document.getElementById('newQ').value.trim(),a=document.getElementById('newA').value.trim();if(!q||!a){alert('Please fill both fields');return}qa.push({id:Date.now(),q,a});document.getElementById('newQ').value='';document.getElementById('newA').value='';rq();alert('✅ Q&A added!')}
