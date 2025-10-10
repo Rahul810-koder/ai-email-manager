@@ -1,257 +1,969 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Email Manager</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Email Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
 
+        /* Welcome Screen */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 9999;
+            overflow-y: auto;
+        }
 
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-  <body>
+        .welcome-screen.hidden {
+            display: none;
+        }
 
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh}
-.header{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.1);padding:1rem;position:sticky;top:0;z-index:100}
-.header-content{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
-.logo{background:linear-gradient(135deg,#667eea,#764ba2);padding:.5rem;border-radius:.5rem;width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:20px}
-h1{font-size:1.5rem;color:#111}
-.subtitle{font-size:.75rem;color:#666}
-.tabs{display:flex;gap:.5rem;flex-wrap:wrap}
-.tab{padding:.5rem 1rem;border:none;border-radius:.5rem;cursor:pointer;font-size:.875rem;font-weight:500;transition:.2s}
-.tab.active{background:#667eea;color:#fff}
-.tab:not(.active){background:#f3f4f6;color:#374151}
-.tab:hover:not(.active){background:#e5e7eb}
-.container{max-width:1200px;margin:0 auto;padding:1rem}
-.grid{display:grid;grid-template-columns:1fr;gap:1rem}
-@media(min-width:1024px){.grid{grid-template-columns:350px 1fr}}
-.card{background:#fff;border-radius:1rem;box-shadow:0 4px 12px rgba(0,0,0,.15);overflow:hidden}
-.card-header{padding:1rem;border-bottom:1px solid #e5e7eb;background:#f9fafb;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
-.card-header h2{font-size:1rem;font-weight:600;margin-bottom:.25rem}
-.card-header p{font-size:.75rem;color:#666}
-.btn-add-email{background:#16a34a;color:#fff;padding:.4rem .8rem;border:none;border-radius:.5rem;cursor:pointer;font-size:.75rem;font-weight:600;transition:.2s}
-.btn-add-email:hover{background:#15803d}
-.email-list{max-height:600px;overflow-y:auto}
-.email{padding:1rem;border-bottom:1px solid #f3f4f6;cursor:pointer;transition:.2s}
-.email:hover{background:#f9fafb}
-.email.selected{background:#eff6ff;border-left:4px solid #667eea}
-.email.unread{background:rgba(239,246,255,.3)}
-.email-from{font-size:.875rem;font-weight:600;margin-bottom:.25rem;display:flex;align-items:center;gap:.5rem}
-.mood-emoji{font-size:1.25rem}
-.unread-dot{width:.5rem;height:.5rem;background:#667eea;border-radius:50%;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-.email-subject{font-weight:500;font-size:.875rem;margin-bottom:.5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.email-preview{font-size:.75rem;color:#666;margin-bottom:.5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.email-meta{display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap}
-.badge{padding:.25rem .5rem;border-radius:999px;font-size:.75rem;font-weight:bold}
-.priority-high{background:#fee2e2;color:#dc2626;border:1px solid #dc2626}
-.priority-medium{background:#fed7aa;color:#ea580c;border:1px solid #ea580c}
-.priority-low{background:#fef3c7;color:#ca8a04;border:1px solid #ca8a04}
-.cat-urgent{background:#fee2e2;color:#991b1b}
-.cat-customer{background:#dbeafe;color:#1e40af}
-.cat-meeting{background:#dcfce7;color:#166534}
-.cat-newsletter{background:#f3f4f6;color:#374151}
-.cat-inquiry{background:#f3e8ff;color:#6b21a8}
-.time{font-size:.75rem;color:#999}
-.empty{padding:3rem 1rem;text-align:center;color:#999}
-.detail{padding:1.5rem}
-.detail-title{font-size:1.25rem;font-weight:bold;margin-bottom:.5rem}
-.detail-meta{font-size:.875rem;color:#666;margin-bottom:.25rem}
-.detail-badges{display:flex;gap:.5rem;margin:1rem 0;flex-wrap:wrap}
-.mood-indicator{display:inline-flex;align-items:center;gap:.5rem;background:#f3f4f6;padding:.5rem 1rem;border-radius:.5rem;font-size:.875rem;font-weight:500}
-.section{margin:1.5rem 0}
-.section-title{font-size:.875rem;font-weight:600;margin-bottom:.5rem}
-.body{color:#111;line-height:1.6}
-.response-box{background:linear-gradient(135deg,#dcfce7,#d1fae5);border:2px solid #86efac;border-radius:.75rem;padding:1.5rem;margin-top:1rem}
-.response-title{font-size:1rem;font-weight:600;margin-bottom:.75rem}
-.response-text{margin-bottom:1rem;line-height:1.6}
-.btn{background:#16a34a;color:#fff;padding:.5rem 1rem;border:none;border-radius:.5rem;cursor:pointer;font-size:.875rem;font-weight:500;transition:.2s}
-.btn:hover{background:#15803d}
-.settings{display:none}
-.settings.active{display:block}
-.settings-card{background:#fff;border-radius:1rem;box-shadow:0 4px 12px rgba(0,0,0,.15);padding:1.5rem}
-.settings-title{font-size:1.5rem;font-weight:bold;margin-bottom:.5rem}
-.settings-desc{color:#666;margin-bottom:1.5rem}
-.add-box{background:linear-gradient(135deg,#eff6ff,#f3e8ff);border:2px solid #bfdbfe;border-radius:.75rem;padding:1.5rem;margin-bottom:1.5rem}
-.add-title{font-weight:600;margin-bottom:1rem}
-.form-group{margin-bottom:1rem}
-.form-group label{display:block;font-size:.875rem;font-weight:500;margin-bottom:.5rem}
-.form-group input,.form-group textarea{width:100%;padding:.5rem 1rem;border:1px solid #d1d5db;border-radius:.5rem;font-size:.875rem;font-family:inherit}
-.form-group input:focus,.form-group textarea:focus{outline:none;border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.1)}
-.btn-add{background:#667eea;color:#fff;padding:.5rem 1.5rem;border:none;border-radius:.5rem;cursor:pointer;font-size:.875rem;font-weight:500}
-.btn-add:hover{background:#5568d3}
-.qa-list-title{font-weight:600;margin:1.5rem 0 1rem}
-.qa{border:1px solid #e5e7eb;border-radius:.75rem;padding:1rem;margin-bottom:1rem;transition:.2s}
-.qa:hover{box-shadow:0 4px 6px rgba(0,0,0,.1)}
-.qa-header{display:flex;justify-content:space-between;align-items:start;margin-bottom:.75rem}
-.qa-question{font-size:.875rem;font-weight:600}
-.btn-delete{color:#dc2626;background:none;border:none;cursor:pointer;font-size:1.25rem}
-.qa-answer{background:#f9fafb;padding:.75rem;border-radius:.5rem;font-size:.875rem;line-height:1.5}
-.hidden{display:none}
-.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
-.modal.active{display:flex}
-.modal-content{background:#fff;border-radius:1rem;padding:2rem;max-width:500px;width:90%;max-height:90vh;overflow-y:auto}
-.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
-.modal-title{font-size:1.25rem;font-weight:bold}
-.btn-close{background:none;border:none;font-size:1.5rem;cursor:pointer;color:#999}
-.btn-close:hover{color:#333}
-</style>
+        .welcome-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .logo-big {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        .welcome-title {
+            font-size: 32px;
+            font-weight: bold;
+            color: #111;
+            margin-bottom: 15px;
+            line-height: 1.2;
+        }
+
+        .welcome-subtitle {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 40px;
+            line-height: 1.5;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-bottom: 40px;
+            text-align: left;
+        }
+
+        @media (min-width: 600px) {
+            .features-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .feature-card {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 12px;
+            transition: transform 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .feature-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .feature-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111;
+            margin-bottom: 5px;
+        }
+
+        .feature-desc {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .btn-try {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 18px 50px;
+            border: none;
+            border-radius: 12px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .btn-try:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-try:active {
+            transform: translateY(0);
+        }
+
+        /* Main App */
+        #mainApp {
+            display: none;
+        }
+
+        #mainApp.active {
+            display: block;
+        }
+
+        .header {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 8px;
+            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .title-section h1 {
+            font-size: 20px;
+            color: #111;
+        }
+
+        .title-section p {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .tab:not(.active) {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        @media (min-width: 1024px) {
+            .grid {
+                grid-template-columns: 350px 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 15px;
+            border-bottom: 1px solid #e5e7eb;
+            background: #f9fafb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .card-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .card-header p {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .btn-add {
+            background: #16a34a;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .empty {
+            padding: 60px 20px;
+            text-align: center;
+            color: #999;
+        }
+
+        .empty-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+            opacity: 0.3;
+        }
+
+        .empty-text {
+            font-size: 18px;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .empty-hint {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .settings {
+            display: none;
+        }
+
+        .settings.active {
+            display: block;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .btn-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+            line-height: 1;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-submit {
+            background: #16a34a;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+        }
+
+        .btn-submit:hover {
+            background: #15803d;
+        }
+
+        .email-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .email {
+            padding: 15px;
+            border-bottom: 1px solid #f3f4f6;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .email:hover {
+            background: #f9fafb;
+        }
+
+        .email.unread {
+            background: rgba(239, 246, 255, 0.3);
+        }
+
+        .email.selected {
+            background: #eff6ff;
+            border-left: 4px solid #667eea;
+        }
+
+        .email-from {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mood {
+            font-size: 20px;
+        }
+
+        .email-subject {
+            font-weight: 500;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .email-preview {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .email-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .priority-high {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .priority-medium {
+            background: #fed7aa;
+            color: #ea580c;
+        }
+
+        .priority-low {
+            background: #fef3c7;
+            color: #ca8a04;
+        }
+
+        .detail {
+            padding: 20px;
+        }
+
+        .detail-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .detail-meta {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .detail-badges {
+            display: flex;
+            gap: 8px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .mood-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #f3f4f6;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .section {
+            margin: 20px 0;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .body {
+            color: #111;
+            line-height: 1.6;
+        }
+
+        .response-box {
+            background: linear-gradient(135deg, #dcfce7, #d1fae5);
+            border: 2px solid #86efac;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+
+        .response-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .response-text {
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .btn-copy {
+            background: #16a34a;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .settings-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        .settings-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .settings-desc {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .add-box {
+            background: linear-gradient(135deg, #eff6ff, #f3e8ff);
+            border: 2px solid #bfdbfe;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .qa-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .qa-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .qa-question {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .btn-delete {
+            color: #dc2626;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .qa-answer {
+            background: #f9fafb;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+    </style>
 </head>
 <body>
-<div class="header">
-<div class="header-content">
-<div style="display:flex;align-items:center;gap:.75rem">
-<div class="logo">⚡</div>
-<div>
-<h1>AI Email Manager</h1>
-<p class="subtitle">Smart prioritization & auto-responses</p>
-</div>
-</div>
-<div class="tabs">
-<button class="tab active" id="inboxBtn" onclick="switchTab('inbox')">📥 Inbox</button>
-<button class="tab" id="settingsBtn" onclick="switchTab('settings')">⚙️ Settings</button>
-</div>
-</div>
+
+<!-- Welcome Screen -->
+<div class="welcome-screen" id="welcomeScreen">
+    <div class="welcome-container">
+        <div class="logo-big">⚡</div>
+        <h1 class="welcome-title">AI Email Manager</h1>
+        <p class="welcome-subtitle">Your smart assistant that helps you respond to emails faster with AI-powered suggestions</p>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📧</div>
+                <div class="feature-title">Add Your Emails</div>
+                <div class="feature-desc">Paste any email and AI analyzes it instantly</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">😊</div>
+                <div class="feature-title">Mood Detection</div>
+                <div class="feature-desc">See sender's mood (happy, stressed, angry, etc.)</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <div class="feature-title">Smart Priority</div>
+                <div class="feature-desc">AI scores emails 1-10 based on urgency</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💬</div>
+                <div class="feature-title">AI Responses</div>
+                <div class="feature-desc">Get instant professional replies, copy & send</div>
+            </div>
+        </div>
+
+        <button class="btn-try" onclick="startApp()">🚀 Try It Now</button>
+    </div>
 </div>
 
-<div class="container">
-<div class="grid" id="inboxView">
-<div class="card">
-<div class="card-header">
-<div>
-<h2>Emails (<span id="emailCount">0</span>)</h2>
-<p>Sorted by priority</p>
-</div>
-<button class="btn-add-email" onclick="openAddModal()">➕ Add Email</button>
-</div>
-<div class="email-list" id="emailList"></div>
-</div>
-<div class="card">
-<div id="emailDetail" class="empty">
-<div style="font-size:4rem;opacity:.3">📧</div>
-<p>Select an email to view</p>
-</div>
-</div>
-</div>
+<!-- Main App -->
+<div id="mainApp">
+    <div class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo">⚡</div>
+                <div class="title-section">
+                    <h1>AI Email Manager</h1>
+                    <p>Smart email assistant</p>
+                </div>
+            </div>
+            <div class="tabs">
+                <button class="tab active" id="inboxBtn" onclick="switchTab('inbox')">📥 Inbox</button>
+                <button class="tab" id="settingsBtn" onclick="switchTab('settings')">⚙️ Settings</button>
+            </div>
+        </div>
+    </div>
 
-<div class="settings" id="settingsView">
-<div class="settings-card">
-<h2 class="settings-title">Q&A Settings</h2>
-<p class="settings-desc">Add common questions and answers for AI suggestions.</p>
-<div class="add-box">
-<div class="add-title">➕ Add New Q&A Pair</div>
-<div class="form-group">
-<label>Question</label>
-<input type="text" id="newQ" placeholder="e.g., What are your business hours?">
-</div>
-<div class="form-group">
-<label>Answer</label>
-<textarea id="newA" rows="3" placeholder="Your standard answer..."></textarea>
-</div>
-<button class="btn-add" onclick="addQA()">Add Q&A Pair</button>
-</div>
-<div class="qa-list-title">Your Q&A Pairs (<span id="qaCount">0</span>)</div>
-<div id="qaList"></div>
-</div>
-</div>
+    <div class="container">
+        <div class="grid" id="inboxView">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h2>Emails (<span id="emailCount">0</span>)</h2>
+                        <p>Sorted by priority</p>
+                    </div>
+                    <button class="btn-add" onclick="openAddModal()">➕ Add Email</button>
+                </div>
+                <div class="email-list" id="emailList">
+                    <div class="empty">
+                        <div class="empty-icon">📭</div>
+                        <p class="empty-text">No emails yet</p>
+                        <p class="empty-hint">Click "➕ Add Email" to get started</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div id="emailDetail" class="empty">
+                    <div class="empty-icon">📧</div>
+                    <p class="empty-text">No email selected</p>
+                    <p class="empty-hint">Select an email from the list</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings" id="settingsView">
+            <div class="settings-card">
+                <h2 class="settings-title">Q&A Settings</h2>
+                <p class="settings-desc">Add common questions and answers for AI suggestions.</p>
+                
+                <div class="add-box">
+                    <div style="font-weight:600;margin-bottom:15px">➕ Add New Q&A Pair</div>
+                    <div class="form-group">
+                        <label>Question</label>
+                        <input type="text" id="newQ" placeholder="e.g., What are your business hours?">
+                    </div>
+                    <div class="form-group">
+                        <label>Answer</label>
+                        <textarea id="newA" rows="3" placeholder="Your standard answer..."></textarea>
+                    </div>
+                    <button class="btn-submit" onclick="addQA()">Add Q&A Pair</button>
+                </div>
+
+                <div style="font-weight:600;margin-bottom:15px">Your Q&A Pairs (<span id="qaCount">0</span>)</div>
+                <div id="qaList"></div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Add Email Modal -->
 <div class="modal" id="addModal">
-<div class="modal-content">
-<div class="modal-header">
-<div class="modal-title">➕ Add New Email</div>
-<button class="btn-close" onclick="closeAddModal()">✕</button>
-</div>
-<div class="form-group">
-<label>From (Email Address)</label>
-<input type="email" id="emailFrom" placeholder="sender@example.com">
-</div>
-<div class="form-group">
-<label>Subject</label>
-<input type="text" id="emailSubject" placeholder="Email subject">
-</div>
-<div class="form-group">
-<label>Email Body</label>
-<textarea id="emailBody" rows="6" placeholder="Paste the email content here..."></textarea>
-</div>
-<button class="btn" onclick="addEmail()" style="width:100%">✅ Add Email</button>
-</div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">➕ Add New Email</div>
+            <button class="btn-close" onclick="closeAddModal()">×</button>
+        </div>
+        <div class="form-group">
+            <label>From (Email Address)</label>
+            <input type="email" id="emailFrom" placeholder="sender@example.com">
+        </div>
+        <div class="form-group">
+            <label>Subject</label>
+            <input type="text" id="emailSubject" placeholder="Email subject">
+        </div>
+        <div class="form-group">
+            <label>Email Body</label>
+            <textarea id="emailBody" rows="6" placeholder="Paste the email content here..."></textarea>
+        </div>
+        <button class="btn-submit" onclick="addEmail()">✅ Add Email</button>
+    </div>
 </div>
 
 <script>
-let qa=[
-{id:1,q:"What are your business hours?",a:"I'm available Monday through Friday, 9 AM to 5 PM EST. For urgent matters outside these hours, please mark your email as 'urgent'."},
-{id:2,q:"Do you offer refunds?",a:"Yes, we offer a 30-day money-back guarantee on all our products."}
+let qa = [
+    {id: 1, q: "What are your business hours?", a: "I'm available Monday through Friday, 9 AM to 5 PM EST."},
+    {id: 2, q: "Do you offer refunds?", a: "Yes, we offer a 30-day money-back guarantee."}
 ];
-let emails=[
-{id:1,from:"john.smith@company.com",subject:"Urgent: Project Deadline Extension",preview:"Hi, I hope this message finds you well...",body:"Hi, I hope this message finds you well. I'm writing to request a deadline extension for the Q4 project due to unforeseen circumstances. Would it be possible to extend by one week?",time:"2h ago",priority:9,cat:"urgent",read:false,mood:"😰"},
-{id:2,from:"sarah.johnson@email.com",subject:"Question about refund policy",preview:"Hello, I purchased your product...",body:"Hello, I purchased your product last week and I'm not completely satisfied. Could you explain your refund policy?",time:"5h ago",priority:7,cat:"customer",read:false,mood:"😐"},
-{id:3,from:"mike.wilson@tech.com",subject:"Meeting Confirmation - Tuesday",preview:"Just wanted to confirm...",body:"Just wanted to confirm our meeting scheduled for next Tuesday at 2 PM. Please let me know if this works.",time:"1d ago",priority:6,cat:"meeting",read:true,mood:"😊"},
-{id:4,from:"newsletter@updates.com",subject:"Weekly News Digest",preview:"Check out this week's stories...",body:"Check out this week's top stories in technology and business.",time:"2d ago",priority:3,cat:"newsletter",read:true,mood:"😎"},
-{id:5,from:"alex.brown@startup.io",subject:"What are your working hours?",preview:"Hi, I'm trying to schedule...",body:"Hi there, I'm trying to schedule a call with you. Could you let me know what your availability is like?",time:"3h ago",priority:5,cat:"inquiry",read:false,mood:"😊"}
-];
-let sel=null;
-let nextId=6;
+let emails = [];
+let sel = null;
+let nextId = 1;
 
-function detectMood(body){
-let l=body.toLowerCase();
-if(l.includes('urgent')||l.includes('asap')||l.includes('deadline')||l.includes('immediately'))return'😰';
-if(l.includes('angry')||l.includes('disappointed')||l.includes('unacceptable')||l.includes('complaint'))return'😠';
-if(l.includes('thank')||l.includes('appreciate')||l.includes('great')||l.includes('excellent'))return'😊';
-if(l.includes('?'))return'🤔';
-return'😐'
+function detectMood(body) {
+    let l = body.toLowerCase();
+    if (l.includes('urgent') || l.includes('asap') || l.includes('deadline')) return '😰';
+    if (l.includes('angry') || l.includes('disappointed') || l.includes('complaint')) return '😠';
+    if (l.includes('thank') || l.includes('appreciate') || l.includes('great')) return '😊';
+    if (l.includes('?')) return '🤔';
+    return '😐';
 }
 
-function analyzePriority(subject,body){
-let s=0,l=(subject+' '+body).toLowerCase();
-['urgent','asap','critical','emergency','immediately','deadline today'].forEach(w=>{if(l.includes(w))s+=4});
-['important','priority','deadline','required','must','action needed'].forEach(w=>{if(l.includes(w))s+=3});
-['partnership','investment','opportunity','deal','contract'].forEach(w=>{if(l.includes(w))s+=3});
-['customer','client','feedback','complaint','issue','problem','bug'].forEach(w=>{if(l.includes(w))s+=3});
-['?'].forEach(w=>{if(l.includes(w))s+=1});
-return Math.min(s,10)
+function analyzePriority(subject, body) {
+    let s = 0, l = (subject + ' ' + body).toLowerCase();
+    ['urgent', 'asap', 'critical', 'emergency', 'immediately'].forEach(w => { if (l.includes(w)) s += 4; });
+    ['important', 'priority', 'deadline', 'required', 'must'].forEach(w => { if (l.includes(w)) s += 3; });
+    ['partnership', 'investment', 'opportunity', 'deal'].forEach(w => { if (l.includes(w)) s += 3; });
+    ['customer', 'client', 'complaint', 'issue', 'problem'].forEach(w => { if (l.includes(w)) s += 3; });
+    return Math.min(s, 10);
 }
 
-function detectCategory(subject,body){
-let l=(subject+' '+body).toLowerCase();
-if(l.includes('urgent')||l.includes('asap')||l.includes('critical'))return'urgent';
-if(l.includes('customer')||l.includes('client')||l.includes('refund'))return'customer';
-if(l.includes('meeting')||l.includes('call')||l.includes('schedule'))return'meeting';
-if(l.includes('newsletter')||l.includes('digest')||l.includes('update'))return'newsletter';
-return'inquiry'
+function startApp() {
+    document.getElementById('welcomeScreen').classList.add('hidden');
+    document.getElementById('mainApp').classList.add('active');
 }
 
-function openAddModal(){document.getElementById('addModal').classList.add('active')}
-function closeAddModal(){document.getElementById('addModal').classList.remove('active');document.getElementById('emailFrom').value='';document.getElementById('emailSubject').value='';document.getElementById('emailBody').value=''}
-
-function addEmail(){
-let from=document.getElementById('emailFrom').value.trim();
-let subject=document.getElementById('emailSubject').value.trim();
-let body=document.getElementById('emailBody').value.trim();
-if(!from||!subject||!body){alert('Please fill all fields');return}
-let priority=analyzePriority(subject,body);
-let cat=detectCategory(subject,body);
-let mood=detectMood(body);
-let preview=body.substring(0,60)+'...';
-emails.push({id:nextId++,from,subject,preview,body,time:'Just now',priority,cat,read:false,mood});
-closeAddModal();
-re();
-alert('✅ Email added! Priority: '+priority+'/10')
+function openAddModal() {
+    document.getElementById('addModal').classList.add('active');
 }
 
-function pc(p){return p>=8?'priority-high':p>=6?'priority-medium':'priority-low'}
-function cc(c){return'cat-'+c}
-function gr(b){let l=b.toLowerCase();for(let q of qa){let k=q.q.toLowerCase().split(' ').filter(w=>w.length>3);if(k.some(kw=>l.includes(kw)))return q.a}return"No suggested response. Add Q&A pairs in Settings."}
-function switchTab(t){let iv=document.getElementById('inboxView'),sv=document.getElementById('settingsView'),ib=document.getElementById('inboxBtn'),sb=document.getElementById('settingsBtn');if(t==='inbox'){iv.classList.remove('hidden');sv.classList.remove('active');ib.classList.add('active');sb.classList.remove('active')}else{iv.classList.add('hidden');sv.classList.add('active');sb.classList.add('active');ib.classList.remove('active')}}
-function re(){document.getElementById('emailList').innerHTML=emails.sort((a,b)=>b.priority-a.priority).map(e=>`<div class="email ${!e.read?'unread':''} ${sel?.id===e.id?'selected':''}" onclick="se(${e.id})"><div class="email-from"><span class="mood-emoji">${e.mood}</span>${!e.read?'<div class="unread-dot"></div>':''}${e.from}</div><div class="email-subject">${e.subject}</div><div class="email-preview">${e.preview}</div><div class="email-meta"><span class="badge ${cc(e.cat)}">${e.cat}</span><span class="badge ${pc(e.priority)}">${e.priority}</span><span class="time">🕐 ${e.time}</span></div></div>`).join('');document.getElementById('emailCount').textContent=emails.length}
-function se(id){let e=emails.find(x=>x.id===id);if(!e)return;e.read=true;sel=e;re();let r=gr(e.body);let moodText={'😊':'Happy/Positive','😠':'Angry/Upset','😰':'Stressed/Urgent','😐':'Neutral','🤔':'Questioning','😎':'Casual'}[e.mood]||'Neutral';document.getElementById('emailDetail').innerHTML=`<div class="detail"><div class="detail-title">${e.subject}</div><div class="detail-meta">From: ${e.from}</div><div class="detail-meta">🕐 ${e.time}</div><div class="detail-badges"><span class="badge ${cc(e.cat)}">${e.cat}</span><span class="badge ${pc(e.priority)}">Priority: ${e.priority}/10</span><div class="mood-indicator"><span style="font-size:1.5rem">${e.mood}</span><span>Mood: ${moodText}</span></div></div><div class="section"><div class="section-title">📧 Email Content</div><div class="body">${e.body}</div></div><div class="response-box"><div class="response-title">⚡ AI Suggested Response</div><div class="response-text">${r}</div><button class="btn" onclick="cr()">📋 Copy Response</button></div></div>`}
-function cr(){navigator.clipboard.writeText(gr(sel.body));alert('✅ Response copied!')}
-function rq(){document.getElementById('qaList').innerHTML=qa.map(q=>`<div class="qa"><div class="qa-header"><div class="qa-question">${q.q}</div><button class="btn-delete" onclick="dq(${q.id})">✕</button></div><div class="qa-answer">${q.a}</div></div>`).join('');document.getElementById('qaCount').textContent=qa.length}
-function addQA(){let q=document.getElementById('newQ').value.trim(),a=document.getElementById('newA').value.trim();if(!q||!a){alert('Please fill both fields');return}qa.push({id:Date.now(),q,a});document.getElementById('newQ').value='';document.getElementById('newA').value='';rq();alert('✅ Q&A added!')}
-function dq(id){if(confirm('Delete this Q&A?'))qa=qa.filter(x=>x.id!==id);rq()}
-re();rq();
+function closeAddModal() {
+    document.getElementById('addModal').classList.remove('active');
+    document.getElementById('emailFrom').value = '';
+    document.getElementById('emailSubject').value = '';
+    document.getElementById('emailBody').value = '';
+}
+
+function addEmail() {
+    let from = document.getElementById('emailFrom').value.trim();
+    let subject = document.getElementById('emailSubject').value.trim();
+    let body = document.getElementById('emailBody').value.trim();
+    
+    if (!from || !subject || !body) {
+        alert('Please fill all fields');
+        return;
+    }
+    
+    let priority = analyzePriority(subject, body);
+    let mood = detectMood(body);
+    let preview = body.substring(0, 60) + '...';
+    
+    emails.push({
+        id: nextId++,
+        from: from,
+        subject: subject,
+        preview: preview,
+        body: body,
+        time: 'Just now',
+        priority: priority,
+        read: false,
+        mood: mood
+    });
+    
+    closeAddModal();
+    renderEmails();
+    alert('✅ Email added! Priority: ' + priority + '/10');
+}
+
+function getPriorityClass(p) {
+    if (p >= 8) return 'priority-high';
+    if (p >= 6) return 'priority-medium';
+    return 'priority-low';
+}
+
+function getSuggestedResponse(body) {
+    let l = body.toLowerCase();
+    for (let q of qa) {
+        let keywords = q.q.toLowerCase().split(' ').filter(w => w.length > 3);
+        if (keywords.some(kw => l.includes(kw))) {
+            return q.a;
+        }
+    }
+    return "No suggested response available. Add Q&A pairs in Settings.";
+}
+
+function switchTab(t) {
+    let iv = document.getElementById('inboxView');
+    let sv = document.getElementById('settingsView');
+    let ib = document.getElementById('inboxBtn');
+    let sb = document.getElementById('settingsBtn');
+    
+    if (t === 'inbox') {
+        iv.style.display = 'grid';
+        sv.classList.remove('active');
+        ib.classList.add('active');
+        sb.classList.remove('active');
+    } else {
+        iv.style.display = 'none';
+        sv.classList.add('active');
+        sb.classList.add('active');
+        ib.classList.remove('active');
+    }
+}
+
+function renderEmails() {
+    if (emails.length === 0) {
+        document.getElementById('emailList').innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p class="empty-text">No emails yet</p><p class="empty-hint">Click "➕ Add Email" to get started</p></div>';
+        document.getElementById('emailCount').textContent = 0;
+        return;
+    }
+    
+    let sorted = emails.sort((a, b) => b.priority - a.priority);
+    document.getElementById('emailList').innerHTML = sorted.map(e => `
+        <div class="email ${!e.read ? 'unread' : ''} ${sel?.id === e.id ? 'selected' : ''}" onclick="selectEmail(${e.id})">
+            <div class="email-from">
+                <span class="mood">${e.mood}</span>
+                ${e.from}
+            </div>
+            <div class="email-subject">${e.subject}</div>
+            <div class="email-preview">${e.preview}</div>
+            <div class="email-meta">
+                <span class="badge ${getPriorityClass(e.priority)}">Priority: ${e.priority}</span>
+                <span style="font-size:12px;color:#999">${e.time}</span>
+            </div>
+        </div>
+    `).join('');
+    document.getElementById('emailCount').textContent = emails.length;
+}
+
+function selectEmail(id) {
+    let e = emails.find(x => x.id === id);
+    if (!e) return;
+    
+    e.read = true;
+    sel = e;
+    renderEmails();
+    
+    let response = getSuggestedResponse(e.body);
+    let moodText = {'😊': 'Happy', '😠': 'Angry', '😰': 'Stressed', '😐': 'Neutral', '🤔': 'Questioning'}[e.mood] || 'Neutral';
+    
+    document.getElementById('emailDetail').innerHTML = `
+        <div class="detail">
+            <div class="detail-title">${e.subject}</div>
+            <div class="detail-meta">From: ${e.from}</div>
+            <div class="detail-meta">${e.time}</div>
+            <div class="detail-badges">
+                <span class="badge ${getPriorityClass(e.priority)}">Priority: ${e.priority}/10</span>
+                <div class="mood-indicator">
+                    <span style="font-size:24px">${e.mood}</span>
+                    <span>Mood: ${moodText}</span>
+                </div>
+            </div>
+            <div class="section">
+                <div class="section-title">📧 Email Content</div>
+                <div class="body">${e.body}</div>
+            </div>
+            <div class="response-box">
+                <div class="response-title">⚡ AI Suggested Response</div>
+                <div class="response-text">${response}</div>
+                <button class="btn-copy" onclick="copyResponse()">📋 Copy Response</button>
+            </div>
+        </div>
+    `;
+}
+
+function copyResponse() {
+    if (!sel) return;
+    let response = getSuggestedResponse(sel.body);
+    navigator.clipboard.writeText(response);
+    alert('✅ Response copied to clipboard!');
+}
+
+function renderQA() {
+    document.getElementById('qaList').innerHTML = qa.map(q => `
+        <div class="qa-item">
+            <div class="qa-header">
+                <div class="qa-question">${q.q}</div>
+                <button class="btn-delete" onclick="deleteQA(${q.id})">×</button>
+            </div>
+            <div class="qa-answer">${q.a}</div>
+        </div>
+    `).join('');
+    document.getElementById('qaCount').textContent = qa.length;
+}
+
+function addQA() {
+    let q = document.getElementById('newQ').value.trim();
+    let a = document.getElementById('newA').value.trim();
+    
+    if (!q || !a) {
+        alert('Please fill both fields');
+        return;
+    }
+    
+    qa.push({id: Date.now(), q: q, a: a});
+    document.getElementById('newQ').value = '';
+    document.getElementById('newA').value = '';
+    renderQA();
+    alert('✅ Q&A added!');
+}
+
+function deleteQA(id) {
+    if (confirm('Delete this Q&A?')) {
+        qa = qa.filter(x => x.id !== id);
+        renderQA();
+    }
+}
+
+renderQA();
 </script>
-</body>
-</html>
+
+</body
