@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Email Manager</title>
-    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Configure Tailwind to use Inter font -->
     <script>
         tailwind.config = {
             theme: {
@@ -19,24 +17,17 @@
         }
     </script>
     <style>
-        /* Custom styles for the dark theme look and feel */
         body {
-            background-color: #0d1117; /* Dark GitHub background */
+            background-color: #0d1117;
             font-family: 'Inter', sans-serif;
         }
-        /* Hide screens by default, JS will manage visibility */
         .screen {
             display: none;
             min-height: 100vh;
         }
-        /* Custom style for the problem/solution blocks to resemble the user's requested look */
-        .problem-block {
-            background-color: rgba(61, 28, 28, 0.4); /* Dark Red/Maroon */
+        .screen.active {
+            display: flex;
         }
-        .solution-block {
-            background-color: rgba(28, 61, 28, 0.4); /* Dark Green */
-        }
-        /* Style for the modal overlay */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -46,203 +37,108 @@
             background-color: rgba(0, 0, 0, 0.75);
             display: none;
             z-index: 50;
-            overflow-y: auto;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active {
+            display: flex;
         }
     </style>
 </head>
 <body class="text-white">
-
-    <!-- JAVASCRIPT LOGIC -->
     <script>
-        // Global state for emails
         let emails = [];
         let selectedEmail = null;
-        const apiKey = ""; // API key is handled by the canvas environment
-        const model = 'gemini-2.5-flash-preview-05-20';
-
-        // --- Utility Functions ---
-
-        /**
-         * Executes fetch with exponential backoff for API calls.
-         */
-        async function exponentialBackoffFetch(url, options, maxRetries = 5) {
-            for (let i = 0; i < maxRetries; i++) {
-                try {
-                    const response = await fetch(url, options);
-                    if (response.ok) return response;
-                    
-                    // Throw error for non-successful status codes
-                    throw new Error(`API returned status ${response.status}`);
-                } catch (error) {
-                    if (i === maxRetries - 1) {
-                        throw new Error(`Failed after ${maxRetries} attempts. ${error.message}`);
-                    }
-                    const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                }
-            }
-        }
-        
-        // --- Screen Flow Logic ---
+        let userInterests = '';
+        let userSchedule = '';
 
         function showScreen(screenId) {
             document.querySelectorAll('.screen').forEach(screen => {
-                screen.style.display = 'none';
+                screen.classList.remove('active');
             });
-            document.getElementById(screenId).style.display = 'block';
+            document.getElementById(screenId).classList.add('active');
         }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            showScreen('welcome-screen');
-        });
 
         function startCustomization() {
             showScreen('customization-screen');
         }
 
         function continueToInbox() {
+            userInterests = document.getElementById('interests').value;
+            userSchedule = document.getElementById('schedule').value;
             showScreen('main-app-screen');
-            renderEmails(); // Load the email list when entering the inbox
+            renderEmails();
         }
 
-        // --- Email Modal Logic ---
-
         function openAddEmailModal() {
-            document.getElementById('add-email-modal').style.display = 'flex';
+            document.getElementById('add-email-modal').classList.add('active');
         }
 
         function closeAddEmailModal() {
-            document.getElementById('add-email-modal').style.display = 'none';
+            document.getElementById('add-email-modal').classList.remove('active');
             document.getElementById('email-form').reset();
         }
 
-        function setLoading(isLoading) {
-            const button = document.getElementById('add-email-submit-btn');
-            const spinner = document.getElementById('loading-spinner');
-            if (isLoading) {
-                button.disabled = true;
-                button.innerHTML = '<span id="loading-spinner" class="animate-spin inline-block w-4 h-4 border-2 border-t-2 border-white rounded-full mr-2"></span> Analyzing...';
-            } else {
-                button.disabled = false;
-                button.innerHTML = '✅ Add Email';
-            }
+        function analyzeMood(text) {
+            const lower = text.toLowerCase();
+            if (lower.includes('urgent') || lower.includes('asap') || lower.includes('critical') || lower.includes('immediately')) return 'Stressed';
+            if (lower.includes('angry') || lower.includes('disappointed') || lower.includes('complaint') || lower.includes('furious') || lower.includes('unacceptable')) return 'Concerned';
+            if (lower.includes('thank') || lower.includes('appreciate') || lower.includes('great') || lower.includes('excellent')) return 'Happy';
+            if (lower.includes('?')) return 'Neutral';
+            return 'Formal';
         }
 
-        /**
-         * Calls the Gemini API to analyze the email content and generate structured data.
-         */
-       async function analyzeEmailWithAI(email) {
-    // Get user's interests and schedule
-    const userInterests = document.getElementById('interests').value || 'Not specified';
-    const userSchedule = document.getElementById('schedule').value || 'Not specified';
-    
-    const systemPrompt = `You are a world-class AI Email Manager. Your task is to analyze the user's email, determine its urgency, assess the sender's mood, summarize the key points, and generate a professional, concise draft response (3-4 sentences long).
-    
-USER CONTEXT:
-- Interests: ${userInterests}
-- Schedule: ${userSchedule}
-
-The email is:
----
-From: ${email.from}
-Subject: ${email.subject}
-Body: ${email.body}
----
-
-IMPORTANT: If the email relates to the user's interests, increase the priority score. If it aligns with their schedule/availability concerns, adjust accordingly.
-
-Provide your response ONLY in the following JSON format. Do not include any other text or markdown outside the JSON block.
-JSON Schema:
-{
-  "priorityScore": "Number (1-10, where 10 is most urgent)",
-  "mood": "String (one of: Stressed, Happy, Neutral, Concerned, Formal)",
-  "summary": "String (A concise 2-3 sentence summary of the email's content)",
-  "draftResponse": "String (A professional, brief draft reply to the sender)"
-}`;
-            The email is:
-            ---
-            From: ${email.from}
-            Subject: ${email.subject}
-            Body: ${email.body}
-            ---
-
-            Provide your response ONLY in the following JSON format. Do not include any other text or markdown outside the JSON block.
-
-            JSON Schema:
-            {
-              "priorityScore": "Number (1-10, where 10 is most urgent)",
-              "mood": "String (one of: Stressed, Happy, Neutral, Concerned, Formal)",
-              "summary": "String (A concise 2-3 sentence summary of the email's content)",
-              "draftResponse": "String (A professional, brief draft reply to the sender)"
-            }`;
-
-            const payload = {
-                contents: [{ parts: [{ text: systemPrompt }] }],
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "OBJECT",
-                        properties: {
-                            "priorityScore": { "type": "NUMBER" },
-                            "mood": { "type": "STRING" },
-                            "summary": { "type": "STRING" },
-                            "draftResponse": { "type": "STRING" }
-                        },
-                        "propertyOrdering": ["priorityScore", "mood", "summary", "draftResponse"]
-                    },
-                    systemInstruction: {
-                        parts: [{ text: systemPrompt }]
-                    }
-                }
-            };
+        function analyzePriority(subject, body) {
+            let score = 0;
+            const text = (subject + ' ' + body).toLowerCase();
             
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            if (text.includes('urgent') || text.includes('asap')) score += 5;
+            if (text.includes('critical') || text.includes('emergency')) score += 4;
+            if (text.includes('deadline') || text.includes('immediately')) score += 4;
+            if (text.includes('important') || text.includes('priority')) score += 3;
+            if (text.includes('meeting') || text.includes('call')) score += 2;
+            if (text.includes('investment') || text.includes('partnership') || text.includes('opportunity')) score += 5;
+            if (text.includes('customer') || text.includes('complaint') || text.includes('issue') || text.includes('problem')) score += 4;
+            if (text.includes('angry') || text.includes('disappointed') || text.includes('furious')) score += 4;
+            if (text.includes('refund') || text.includes('broken') || text.includes('bug')) score += 3;
 
-            try {
-                const response = await exponentialBackoffFetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+            // Boost for user interests
+            if (userInterests) {
+                const interests = userInterests.toLowerCase().split(',');
+                interests.forEach(interest => {
+                    if (text.includes(interest.trim())) score += 4;
                 });
-                
-                const result = await response.json();
-                
-                const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (jsonText) {
-                    // Attempt to parse the JSON text
-                    const analysis = JSON.parse(jsonText);
-                    return analysis;
-                } else {
-                    console.error("AI response content structure invalid:", result);
-                    throw new Error("Invalid AI response structure.");
-                }
-
-            } catch (error) {
-                console.error("Gemini API call failed:", error);
-                // Return a safe, default analysis on error
-                return {
-                    priorityScore: 5,
-                    mood: 'Neutral',
-                    summary: 'Error analyzing email. Please check API connection.',
-                    draftResponse: 'Apologies, I encountered an error. Please try again later.'
-                };
             }
+
+            return Math.min(Math.max(score, 1), 10);
         }
 
-        /**
-         * Main function to add an email, analyze it, and update the UI.
-         */
-        async function addEmail() {
-            event.preventDefault(); // Prevent default form submission
-            setLoading(true);
+        function generateResponse(subject, body) {
+            const lower = (subject + ' ' + body).toLowerCase();
+            
+            if (lower.includes('meeting') || lower.includes('call') || lower.includes('schedule')) {
+                return 'Thank you for reaching out. I appreciate you taking the time to connect. I would be happy to schedule a meeting at your convenience. Please let me know what times work best for you.';
+            }
+            if (lower.includes('investment') || lower.includes('partnership') || lower.includes('opportunity')) {
+                return 'Thank you for this exciting opportunity. I am very interested in exploring potential collaboration. I would love to discuss this further and learn more about your proposal.';
+            }
+            if (lower.includes('refund') || lower.includes('complaint') || lower.includes('issue') || lower.includes('problem')) {
+                return 'I sincerely apologize for the inconvenience you have experienced. Your satisfaction is very important to us. Please let me know how I can help resolve this matter promptly.';
+            }
+            if (lower.includes('thank') || lower.includes('appreciate')) {
+                return 'Thank you so much for your kind words. It was a pleasure working with you. I look forward to future collaborations.';
+            }
+            return 'Thank you for your email. I have received your message and will review it carefully. I will get back to you as soon as possible.';
+        }
 
+        function addEmail() {
+            event.preventDefault();
             const from = document.getElementById('email-from').value;
             const subject = document.getElementById('email-subject').value;
             const body = document.getElementById('email-body').value;
-            
+
             if (!from || !subject || !body) {
-                console.error("Please fill in all fields.");
-                setLoading(false);
+                alert('Please fill all fields');
                 return;
             }
 
@@ -252,29 +148,27 @@ JSON Schema:
                 subject: subject,
                 body: body,
                 received: new Date().toLocaleTimeString(),
-                analysis: null // Will be populated by AI
+                analysis: {
+                    priorityScore: analyzePriority(subject, body),
+                    mood: analyzeMood(subject + ' ' + body),
+                    summary: body.substring(0, 100) + '...',
+                    draftResponse: generateResponse(subject, body)
+                }
             };
 
-            const analysisResult = await analyzeEmailWithAI(newEmail);
-            
-            newEmail.analysis = analysisResult;
             emails.push(newEmail);
-            emails.sort((a, b) => b.analysis.priorityScore - a.analysis.priorityScore); // Sort by Priority Score descending
+            emails.sort((a, b) => b.analysis.priorityScore - a.analysis.priorityScore);
 
-            setLoading(false);
             closeAddEmailModal();
             renderEmails();
-            selectEmail(newEmail.id); // Select the newly added email
+            selectEmail(newEmail.id);
         }
 
-        /**
-         * Renders the list of emails in the sidebar.
-         */
         function renderEmails() {
-            const listContainer = document.getElementById('email-list-container');
+            const container = document.getElementById('email-list-container');
             const placeholder = document.getElementById('email-list-placeholder');
-            listContainer.innerHTML = '';
-            
+            container.innerHTML = '';
+
             if (emails.length === 0) {
                 placeholder.style.display = 'block';
                 return;
@@ -293,45 +187,38 @@ JSON Schema:
                     <div class="flex justify-between items-center text-xs text-gray-300">
                         <span class="truncate">From: ${email.from}</span>
                         <div class="flex items-center space-x-2">
-                             <span class="font-medium text-yellow-400">P:${email.analysis.priorityScore}</span>
-                             <span class="font-medium ${email.analysis.mood === 'Stressed' ? 'text-red-400' : email.analysis.mood === 'Happy' ? 'text-green-400' : 'text-gray-400'}">${email.analysis.mood}</span>
+                            <span class="font-medium text-yellow-400">P:${email.analysis.priorityScore}</span>
+                            <span class="font-medium ${email.analysis.mood === 'Stressed' ? 'text-red-400' : email.analysis.mood === 'Happy' ? 'text-green-400' : email.analysis.mood === 'Concerned' ? 'text-orange-400' : 'text-gray-400'}">${email.analysis.mood}</span>
                         </div>
                     </div>
                 `;
                 card.onclick = () => selectEmail(email.id);
-                listContainer.appendChild(card);
+                container.appendChild(card);
             });
             document.getElementById('email-count').textContent = `Emails (${emails.length})`;
         }
 
-        /**
-         * Displays the content and analysis of the selected email.
-         */
         function selectEmail(id) {
             selectedEmail = emails.find(e => e.id === id);
-            renderEmails(); // Re-render to highlight the selected email
+            renderEmails();
+            const viewer = document.getElementById('email-viewer-container');
+            const empty = document.getElementById('email-viewer-empty');
 
-            const viewerContainer = document.getElementById('email-viewer-container');
-            const emptyState = document.getElementById('email-viewer-empty');
-            
             if (!selectedEmail) {
-                emptyState.style.display = 'flex';
-                viewerContainer.innerHTML = '';
+                empty.style.display = 'flex';
+                viewer.innerHTML = '';
                 return;
             }
 
-            emptyState.style.display = 'none';
-            viewerContainer.innerHTML = `
+            empty.style.display = 'none';
+            viewer.innerHTML = `
                 <div class="flex justify-between items-center pb-4 border-b border-gray-700 mb-6">
                     <h2 class="text-3xl font-bold text-white">${selectedEmail.subject}</h2>
                     <span class="text-sm text-gray-400">Received: ${selectedEmail.received}</span>
                 </div>
-                
                 <div class="text-gray-300 mb-6">
                     <span class="font-semibold text-blue-400">From:</span> ${selectedEmail.from}
                 </div>
-
-                <!-- AI Analysis Section -->
                 <div class="bg-gray-800 p-6 rounded-xl mb-8 border border-yellow-500/50">
                     <h3 class="text-xl font-semibold mb-4 text-yellow-400">⚡ AI Manager Analysis</h3>
                     <div class="grid grid-cols-2 gap-4 mb-4">
@@ -344,42 +231,32 @@ JSON Schema:
                             <span class="text-2xl font-extrabold text-green-400">${selectedEmail.analysis.mood}</span>
                         </div>
                     </div>
-
-                    <h4 class="text-lg font-semibold text-blue-400 mt-4 mb-2">Summary</h4>
-                    <p class="text-gray-300 mb-6">${selectedEmail.analysis.summary}</p>
-
-                    <h4 class="text-lg font-semibold text-yellow-400 mb-2">Draft Response</h4>
+                    <h4 class="text-lg font-semibold text-blue-400 mt-4 mb-2">Draft Response</h4>
                     <textarea id="draft-response" rows="4" class="w-full p-3 bg-gray-700 rounded-lg text-white resize-none">${selectedEmail.analysis.draftResponse}</textarea>
-                    
                     <button onclick="document.getElementById('draft-response').select(); document.execCommand('copy');" class="mt-3 bg-indigo-600 hover:bg-indigo-500 text-white py-2 px-4 rounded-full text-sm transition duration-300">
                         📋 Copy Draft
                     </button>
                 </div>
-
-                <!-- Original Email Body -->
                 <div class="mt-6 border-t border-gray-700 pt-6">
                     <h3 class="text-xl font-semibold mb-3 text-white">Original Email Content</h3>
                     <p class="text-gray-400 whitespace-pre-wrap">${selectedEmail.body}</p>
                 </div>
             `;
         }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            showScreen('welcome-screen');
+        });
     </script>
 
-    <!-- 
-        ========================================
-        VIEW 1: WELCOME SCREEN (Default View)
-        ========================================
-    -->
-    <div id="welcome-screen" class="screen flex flex-col items-center justify-start pt-16 px-4">
-        
-        <!-- Main Header -->
+    <!-- WELCOME SCREEN -->
+    <div id="welcome-screen" class="screen active flex-col items-center justify-start pt-16 px-4">
         <header class="text-center mb-10 max-w-xl">
             <div class="text-5xl font-extrabold text-blue-400 mb-2">⚡</div>
             <h1 class="text-5xl font-bold mb-4">AI Email Manager</h1>
             <p class="text-gray-400 text-xl">Your smart assistant that helps you respond to emails faster with AI-powered suggestions.</p>
         </header>
 
-        <!-- Original Features Grid -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 mb-12 max-w-3xl w-full">
             <div class="flex flex-col items-center p-4 bg-gray-800 rounded-xl shadow-lg hover:bg-gray-700 transition duration-300">
                 <div class="text-3xl mb-1 text-yellow-400">📧</div>
@@ -389,212 +266,120 @@ JSON Schema:
             <div class="flex flex-col items-center p-4 bg-gray-800 rounded-xl shadow-lg hover:bg-gray-700 transition duration-300">
                 <div class="text-3xl mb-1 text-green-400">😊</div>
                 <div class="font-semibold text-sm text-center">Mood Detection</div>
-                <div class="text-xs text-gray-400 text-center">See sender's mood (happy, stressed, angry)</div>
+                <div class="text-xs text-gray-400 text-center">See sender's mood</div>
             </div>
             <div class="flex flex-col items-center p-4 bg-gray-800 rounded-xl shadow-lg hover:bg-gray-700 transition duration-300">
                 <div class="text-3xl mb-1 text-red-400">🎯</div>
                 <div class="font-semibold text-sm text-center">Smart Priority</div>
-                <div class="text-xs text-gray-400 text-center">AI scores emails 1-10 based on urgency</div>
+                <div class="text-xs text-gray-400 text-center">AI scores 1-10</div>
             </div>
             <div class="flex flex-col items-center p-4 bg-gray-800 rounded-xl shadow-lg hover:bg-gray-700 transition duration-300">
                 <div class="text-3xl mb-1 text-blue-400">💬</div>
                 <div class="font-semibold text-sm text-center">AI Responses</div>
-                <div class="text-xs text-gray-400 text-center">Get instant professional reply drafts</div>
+                <div class="text-xs text-gray-400 text-center">Get reply drafts</div>
             </div>
         </div>
 
-        <!-- Try It Now Button (Moves to Customization) -->
-        <button onclick="startCustomization()" class="btn-try bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold py-3 px-8 rounded-full text-lg shadow-2xl transform hover:scale-105 transition duration-300 mb-16">
+        <button onclick="startCustomization()" class="bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold py-3 px-8 rounded-full text-lg shadow-2xl transform hover:scale-105 transition duration-300 mb-16">
             🚀 Try It Now
         </button>
-
-        <!-- NEW SECTION: PROBLEM/SOLUTION SUMMARY -->
-        <section class="ai-summary-section w-full max-w-4xl bg-gray-900 p-8 rounded-2xl shadow-2xl border-t-4 border-blue-600 mb-16">
-            <div class="ai-summary-container">
-                
-                <h2 class="text-3xl font-bold text-center mb-10 text-yellow-400">Your Smart Inbox: AI Email Manager</h2>
-
-                <!-- Problem Section -->
-                <div class="breakdown-item problem-block p-5 rounded-xl mb-6 border-l-4 border-red-500">
-                    <h4 class="text-xl font-semibold mb-3 text-white uppercase tracking-wider">The Challenge: Why Email Is Broken</h4>
-                    <ul class="list-none p-0 text-gray-300">
-                        <li class="relative pl-6 mb-2 before:content-['•'] before:absolute before:left-0 before:text-yellow-400">**Time Sink:** Manually sorting, reading, and triaging an ever-growing inbox.</li>
-                        <li class="relative pl-6 mb-2 before:content-['•'] before:absolute before:left-0 before:text-yellow-400">**Stressful Decisions:** Constantly having to judge urgency and emotional tone.</li>
-                        <li class="relative pl-6 before:content-['•'] before:absolute before:left-0 before:text-yellow-400">**Slow Response:** Drafting professional replies is repetitive and time-consuming.</li>
-                    </ul>
-                </div>
-                
-                <!-- Solution Section -->
-                <div class="breakdown-item solution-block p-5 rounded-xl mb-10 border-l-4 border-green-500">
-                    <h4 class="text-xl font-semibold mb-3 text-white uppercase tracking-wider">The Solution: Your AI Email Assistant</h4>
-                    <ul class="list-none p-0 text-gray-300">
-                        <li class="relative pl-6 mb-2 before:content-['•'] before:absolute before:left-0 before:text-yellow-400">**AI-Powered Insight:** Automated analysis of every message for instant context.</li>
-                        <li class="relative pl-6 mb-2 before:content-['•'] before:absolute before:left-0 before:text-yellow-400">**Prioritized Action:** Clear scores and moods tell you *exactly* what to focus on.</li>
-                        <li class="relative pl-6 before:content-['•'] before:absolute before:left-0 before:text-yellow-400">**Instant Communication:** Generate a perfect, personalized reply in one click.</li>
-                    </ul>
-                </div>
-                
-                <!-- Core Features Breakdown -->
-                <h3 class="text-2xl font-bold text-center text-blue-400 mb-6">Core Feature Breakdown</h3>
-
-                <div class="space-y-4">
-                    <!-- Feature 1: Smart Priority -->
-                    <div class="bg-gray-800 p-5 rounded-lg border-l-4 border-blue-500 shadow-md">
-                        <h4 class="text-lg font-semibold flex items-center mb-2"><span class="text-yellow-400 text-2xl mr-2">🎯</span> Smart Priority Scoring (1-10)</h4>
-                        <p class="text-gray-400">
-                            Our AI instantly analyzes content, deadlines, and language to assign an **urgency score from 1 (Low) to 10 (Critical)**. This feature eliminates the guesswork and directs your attention to the emails that truly matter.
-                        </p>
-                    </div>
-
-                    <!-- Feature 2: Mood Detection -->
-                    <div class="bg-gray-800 p-5 rounded-lg border-l-4 border-blue-500 shadow-md">
-                        <h4 class="text-lg font-semibold flex items-center mb-2"><span class="text-yellow-400 text-2xl mr-2">😊</span> Sender Mood Analysis</h4>
-                        <p class="text-gray-400">
-                            AI detects the sender's emotional tone—such as **Stressed, Happy, Angry, or Neutral**. This insight ensures your drafted AI response is perfectly calibrated to the situation.
-                        </p>
-                    </div>
-
-                    <!-- Feature 3: AI Response Generation -->
-                    <div class="bg-gray-800 p-5 rounded-lg border-l-4 border-blue-500 shadow-md">
-                        <h4 class="text-lg font-semibold flex items-center mb-2"><span class="text-yellow-400 text-2xl mr-2">💬</span> Professional AI Responses</h4>
-                        <p class="text-gray-400">
-                            Based on the email's content and your personal **Q&A settings**, the manager generates a professional reply draft. Simply review, copy, and send—reducing response time from minutes to seconds.
-                        </p>
-                    </div>
-                </div>
-
-            </div>
-        </section>
-
     </div>
 
-    <!-- 
-        ========================================
-        VIEW 2: CUSTOMIZATION SCREEN
-        ========================================
-    -->
-    <div id="customization-screen" class="screen flex flex-col items-center justify-center p-4">
+    <!-- CUSTOMIZATION SCREEN -->
+    <div id="customization-screen" class="screen flex-col items-center justify-center p-4">
         <div class="max-w-xl w-full bg-gray-900 p-8 rounded-2xl shadow-2xl border-t-4 border-yellow-500">
             <h2 class="text-3xl font-bold text-yellow-400 mb-4 text-center">🎯 Customize Your Experience</h2>
-            <p class="text-gray-400 text-center mb-8">Tell us about yourself so we can personalize AI suggestions for you.</p>
-
+            <p class="text-gray-400 text-center mb-8">Tell us about yourself so we can personalize AI suggestions.</p>
+            
             <div class="space-y-6">
                 <div>
-                    <label for="interests" class="block text-sm font-medium text-gray-300 mb-2">Your Main Interests (comma separated)</label>
-                    <input type="text" id="interests" class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Finance, Tech, Marketing">
+                    <label for="interests" class="block text-sm font-medium text-gray-300 mb-2">Your Main Interests</label>
+                    <input type="text" id="interests" class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" placeholder="e.g., Finance, Tech, Marketing">
                 </div>
                 
                 <div>
-                    <label for="schedule" class="block text-sm font-medium text-gray-300 mb-2">Your Schedule/Availability</label>
-                    <textarea id="schedule" rows="3" class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Available 9 AM - 5 PM EST, check email once per hour"></textarea>
+                    <label for="schedule" class="block text-sm font-medium text-gray-300 mb-2">Your Schedule</label>
+                    <textarea id="schedule" rows="3" class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" placeholder="e.g., Available 9 AM - 5 PM EST"></textarea>
                 </div>
             </div>
 
             <div class="mt-8 flex justify-between">
-                <button onclick="continueToInbox()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300">
+                <button onclick="continueToInbox()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-full">
                     Continue to Inbox
                 </button>
-                <button onclick="continueToInbox()" class="text-gray-400 hover:text-white font-medium py-3 px-6 transition duration-300">
+                <button onclick="continueToInbox()" class="text-gray-400 hover:text-white font-medium py-3 px-6">
                     Skip for now
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- 
-        ========================================
-        VIEW 3: MAIN APP / INBOX SCREEN
-        ========================================
-    -->
+    <!-- MAIN APP SCREEN -->
     <div id="main-app-screen" class="screen">
-        <div class="flex h-screen">
-            <!-- Sidebar/Header -->
+        <div class="flex h-screen w-screen">
             <div class="w-1/4 min-w-[300px] bg-gray-800 border-r border-gray-700 p-4 flex flex-col">
                 <header class="mb-6">
                     <h1 class="text-2xl font-bold text-blue-400">AI Email Manager</h1>
-                    <div class="flex justify-between text-sm mt-1 text-gray-400">
-                        <span class="flex items-center"><span class="text-lg mr-1">📥</span> Inbox</span>
-                        <span class="flex items-center hover:text-white cursor-pointer"><span class="text-lg mr-1">⚙️</span> Settings</span>
-                    </div>
                 </header>
-                
-                <h2 class="text-lg font-semibold mb-3" id="email-count">Emails (0) <span class="text-gray-500 text-sm font-normal">Sorted by priority</span></h2>
-                
-                <!-- THE CORRECTED BUTTON: NOW OPENS MODAL -->
-                <button onclick="openAddEmailModal()" class="bg-green-600 hover:bg-green-500 text-white font-semibold py-2 rounded-lg transition duration-300 mb-4">
+
+                <h2 class="text-lg font-semibold mb-3" id="email-count">Emails (0)</h2>
+
+                <button onclick="openAddEmailModal()" class="bg-green-600 hover:bg-green-500 text-white font-semibold py-2 rounded-lg mb-4">
                     ➕ Add Email
                 </button>
 
-                <!-- Email List Container -->
-                <div class="flex-grow overflow-y-auto space-y-2" id="email-list-container">
-                    <!-- Email cards will be rendered here -->
-                </div>
-                
-                <!-- Email List Placeholder -->
+                <div class="flex-grow overflow-y-auto space-y-2" id="email-list-container"></div>
+
                 <div class="bg-gray-700 p-4 rounded-lg text-center text-gray-400 mt-4" id="email-list-placeholder">
                     <span class="text-3xl block mb-2">📭</span>
-                    No emails yet<br>
-                    Click "➕ Add Email" to get started
+                    No emails yet
                 </div>
-
             </div>
 
-            <!-- Email Viewer/Content Area -->
             <div class="flex-grow bg-gray-900 p-8 flex flex-col overflow-y-auto">
-                <div id="email-viewer-container">
-                    <!-- Selected email analysis will be rendered here -->
-                </div>
-
+                <div id="email-viewer-container"></div>
                 <div id="email-viewer-empty" class="text-center text-gray-400 h-full flex flex-col justify-center items-center">
                     <span class="text-6xl block mb-4">📧</span>
                     <h2 class="text-xl font-semibold mb-2">No email selected</h2>
-                    <p>Select an email from the list to view its contents and AI suggestions.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 
-        ========================================
-        MODAL: ADD NEW EMAIL FORM
-        ========================================
-    -->
-    <div id="add-email-modal" class="modal-overlay justify-center items-center p-4">
-        <div class="bg-gray-800 p-8 rounded-xl w-full max-w-lg shadow-2xl border-t-4 border-blue-500 my-8">
+    <!-- ADD EMAIL MODAL -->
+    <div id="add-email-modal" class="modal-overlay">
+        <div class="bg-gray-800 p-8 rounded-xl w-full max-w-lg shadow-2xl border-t-4 border-blue-500">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-2xl font-bold text-blue-400">➕ Add New Email</h3>
-                <button type="button" onclick="closeAddEmailModal()" class="text-gray-400 hover:text-white text-xl">
-                    &times;
-                </button>
+                <button onclick="closeAddEmailModal()" class="text-gray-400 hover:text-white text-xl">×</button>
             </div>
-            
-            <form id="email-form" onsubmit="addEmail(event)">
+
+            <form id="email-form" onsubmit="addEmail()">
                 <div class="mb-4">
-                    <label for="email-from" class="block text-sm font-medium text-gray-300 mb-2">From (Email Address)</label>
-                    <input type="email" id="email-from" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-yellow-500 focus:border-yellow-500">
+                    <label for="email-from" class="block text-sm font-medium text-gray-300 mb-2">From</label>
+                    <input type="email" id="email-from" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
                 </div>
-                
+
                 <div class="mb-4">
                     <label for="email-subject" class="block text-sm font-medium text-gray-300 mb-2">Subject</label>
-                    <input type="text" id="email-subject" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-yellow-500 focus:border-yellow-500">
+                    <input type="text" id="email-subject" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
                 </div>
-                
+
                 <div class="mb-6">
                     <label for="email-body" class="block text-sm font-medium text-gray-300 mb-2">Email Body</label>
-                    <textarea id="email-body" rows="6" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-yellow-500 focus:border-yellow-500" placeholder="Paste the content of the email here..."></textarea>
+                    <textarea id="email-body" rows="6" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"></textarea>
                 </div>
-                
+
                 <div class="flex justify-end space-x-4">
-                    <button type="button" onclick="closeAddEmailModal()" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full transition duration-300">
+                    <button type="button" onclick="closeAddEmailModal()" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full">
                         Cancel
                     </button>
-                    <button type="submit" id="add-email-submit-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-full transition duration-300">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-full">
                         ✅ Add Email
                     </button>
                 </div>
             </form>
         </div>
     </div>
-
 </body>
 </html>
