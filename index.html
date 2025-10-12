@@ -131,9 +131,34 @@
         /**
          * Calls the Gemini API to analyze the email content and generate structured data.
          */
-        async function analyzeEmailWithAI(email) {
-            const systemPrompt = `You are a world-class AI Email Manager. Your task is to analyze the user's email, determine its urgency, assess the sender's mood, summarize the key points, and generate a professional, concise draft response (3-4 sentences long).
+       async function analyzeEmailWithAI(email) {
+    // Get user's interests and schedule
+    const userInterests = document.getElementById('interests').value || 'Not specified';
+    const userSchedule = document.getElementById('schedule').value || 'Not specified';
+    
+    const systemPrompt = `You are a world-class AI Email Manager. Your task is to analyze the user's email, determine its urgency, assess the sender's mood, summarize the key points, and generate a professional, concise draft response (3-4 sentences long).
+    
+USER CONTEXT:
+- Interests: ${userInterests}
+- Schedule: ${userSchedule}
 
+The email is:
+---
+From: ${email.from}
+Subject: ${email.subject}
+Body: ${email.body}
+---
+
+IMPORTANT: If the email relates to the user's interests, increase the priority score. If it aligns with their schedule/availability concerns, adjust accordingly.
+
+Provide your response ONLY in the following JSON format. Do not include any other text or markdown outside the JSON block.
+JSON Schema:
+{
+  "priorityScore": "Number (1-10, where 10 is most urgent)",
+  "mood": "String (one of: Stressed, Happy, Neutral, Concerned, Formal)",
+  "summary": "String (A concise 2-3 sentence summary of the email's content)",
+  "draftResponse": "String (A professional, brief draft reply to the sender)"
+}`;
             The email is:
             ---
             From: ${email.from}
