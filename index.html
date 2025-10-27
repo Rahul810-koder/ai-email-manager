@@ -160,7 +160,114 @@
         font-size: 1.75rem;
     }
 }
+/* Theme Variables */
+:root {
+    --bg-primary: #0d1117;
+    --bg-secondary: #161b22;
+    --bg-tertiary: #1f2937;
+    --text-primary: #ffffff;
+    --text-secondary: #9ca3af;
+    --border-color: #374151;
+    --accent-color: #3b82f6;
+}
 
+body.light-mode {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f3f4f6;
+    --bg-tertiary: #e5e7eb;
+    --text-primary: #1f2937;
+    --text-secondary: #6b7280;
+    --border-color: #d1d5db;
+    --accent-color: #2563eb;
+}
+
+/* Apply variables to elements */
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.bg-gray-900 {
+    background-color: var(--bg-secondary) !important;
+}
+
+.bg-gray-800 {
+    background-color: var(--bg-tertiary) !important;
+}
+
+.bg-gray-700 {
+    background-color: var(--bg-tertiary) !important;
+}
+
+.text-gray-400 {
+    color: var(--text-secondary) !important;
+}
+
+.text-gray-300 {
+    color: var(--text-secondary) !important;
+}
+
+.border-gray-700 {
+    border-color: var(--border-color) !important;
+}
+
+.border-gray-600 {
+    border-color: var(--border-color) !important;
+}
+
+/* Light mode specific adjustments */
+body.light-mode .text-white {
+    color: var(--text-primary) !important;
+}
+
+body.light-mode .bg-gray-600 {
+    background-color: #9ca3af !important;
+}
+
+body.light-mode .hover\:bg-gray-700:hover {
+    background-color: #e5e7eb !important;
+}
+
+body.light-mode .hover\:bg-gray-600:hover {
+    background-color: #f3f4f6 !important;
+}
+
+body.light-mode .hover\:bg-gray-500:hover {
+    background-color: #e5e7eb !important;
+}
+
+/* Theme toggle button styles */
+.theme-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    z-index: 1000;
+}
+
+.theme-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.theme-toggle:active {
+    transform: scale(0.95);
+}
+
+body.light-mode .theme-toggle {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
 /* Small mobile devices */
 @media (max-width: 480px) {
     /* Further reduce text sizes */
@@ -206,7 +313,61 @@
     </style>
 </head>
 <body class="text-white">
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://accounts.google.com/gsi/client" async defer>
+        // Theme Toggle Function
+function toggleTheme() {
+    const body = document.body;
+    const currentTheme = body.classList.contains('light-mode') ? 'light' : 'dark';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    if (newTheme === 'light') {
+        body.classList.add('light-mode');
+    } else {
+        body.classList.remove('light-mode');
+    }
+    
+    // Save preference
+    localStorage.setItem('theme', newTheme);
+    
+    // Update button emoji
+    updateThemeButton();
+}
+
+function updateThemeButton() {
+    const button = document.getElementById('theme-toggle-btn');
+    if (button) {
+        const isLight = document.body.classList.contains('light-mode');
+        button.textContent = isLight ? '🌙' : '☀️';
+    }
+}
+
+// Load saved theme on page load
+function loadSavedTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-mode');
+    }
+    updateThemeButton();
+}
+
+// Update your existing DOMContentLoaded event
+document.addEventListener('DOMContentLoaded', () => {
+    const savedClientId = localStorage.getItem('gmail_client_id');
+    const savedGeminiKey = localStorage.getItem('gemini_api_key');
+    
+    if (savedClientId && savedGeminiKey) {
+        CLIENT_ID = savedClientId;
+        GEMINI_API_KEY = savedGeminiKey;
+        document.getElementById('client-id-input').value = savedClientId;
+        document.getElementById('gemini-key-input').value = savedGeminiKey;
+    }
+    
+    // Load theme
+    loadSavedTheme();
+    
+    showScreen('welcome-screen');
+});
+    </script>
     <script>
         let emails = [];
         let selectedEmail = null;
@@ -1104,5 +1265,9 @@ Respond in JSON format:
             </form>
         </div>
     </div>
+    <!-- Theme Toggle Button (Fixed Position) -->
+<button id="theme-toggle-btn" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+    ☀️
+</button>
 </body>
 </html>
