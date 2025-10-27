@@ -43,6 +43,166 @@
         .modal-overlay.active {
             display: flex;
         }
+        /* Add this to your <style> section */
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    /* Main app layout - stack vertically */
+    #main-app-screen .flex {
+        flex-direction: column;
+    }
+    
+    /* Sidebar takes full width on mobile */
+    #main-app-screen .w-1\/4 {
+        width: 100%;
+        min-width: unset;
+        max-height: 40vh;
+        border-right: none;
+        border-bottom: 2px solid #374151;
+    }
+    
+    /* Email viewer takes remaining space */
+    #main-app-screen .flex-grow {
+        padding: 1rem;
+    }
+    
+    /* Welcome screen - reduce padding */
+    #welcome-screen {
+        padding: 2rem 1rem;
+    }
+    
+    /* Welcome screen heading */
+    #welcome-screen h1 {
+        font-size: 2rem;
+    }
+    
+    #welcome-screen p {
+        font-size: 1rem;
+    }
+    
+    /* Feature grid - 2 columns instead of 4 */
+    #welcome-screen .grid-cols-4 {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    /* How it works - single column */
+    .grid-cols-3 {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Privacy section - single column */
+    .grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Buttons - stack vertically */
+    #welcome-screen .flex.gap-4 {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    #welcome-screen .flex.gap-4 button {
+        width: 100%;
+    }
+    
+    /* Modal - full width on mobile */
+    .modal-overlay > div {
+        width: 95%;
+        max-width: 95%;
+        margin: 1rem;
+    }
+    
+    /* Email viewer content */
+    #email-viewer-container h2 {
+        font-size: 1.5rem;
+    }
+    
+    /* Analysis grid - single column */
+    #email-viewer-container .grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+    
+    /* API setup screen */
+    #api-setup-screen .max-w-2xl,
+    #privacy-screen .max-w-3xl,
+    #gmail-connect-screen .max-w-xl,
+    #customization-screen .max-w-xl {
+        width: 95%;
+        padding: 1.5rem;
+    }
+    
+    /* Privacy screen buttons */
+    #privacy-screen .flex.justify-between,
+    #api-setup-screen .flex.justify-between,
+    #customization-screen .flex.justify-between {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    #privacy-screen .flex.justify-between button,
+    #api-setup-screen .flex.justify-between button,
+    #customization-screen .flex.justify-between button {
+        width: 100%;
+    }
+    
+    /* Email list items - better touch targets */
+    #email-list-container > div {
+        padding: 1rem;
+    }
+    
+    /* Text sizing adjustments */
+    .text-5xl {
+        font-size: 2.5rem;
+    }
+    
+    .text-3xl {
+        font-size: 1.75rem;
+    }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+    /* Further reduce text sizes */
+    #welcome-screen h1 {
+        font-size: 1.75rem;
+    }
+    
+    #welcome-screen .text-xl {
+        font-size: 1rem;
+    }
+    
+    /* Single column for feature grid */
+    #welcome-screen .grid-cols-4,
+    #welcome-screen .grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Smaller buttons */
+    button {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.875rem;
+    }
+    
+    /* Email sidebar - smaller height */
+    #main-app-screen .w-1\/4 {
+        max-height: 35vh;
+    }
+}
+
+/* Landscape mobile orientation */
+@media (max-width: 768px) and (orientation: landscape) {
+    #main-app-screen .flex {
+        flex-direction: row;
+    }
+    
+    #main-app-screen .w-1\/4 {
+        width: 40%;
+        max-height: 100vh;
+        border-right: 2px solid #374151;
+        border-bottom: none;
+    }
+}
     </style>
 </head>
 <body class="text-white">
