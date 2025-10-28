@@ -327,8 +327,7 @@ function toggleTheme() {
     }
     
     // Save preference
-    localStorage.setItem('theme', newTheme);
-    
+  const savedTheme = localStorage.getItem('app-theme');
     // Update button emoji
     updateThemeButton();
 }
