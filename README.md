@@ -1,2 +1,2 @@
 # ai-email-manager
-manage emial
+manage email
